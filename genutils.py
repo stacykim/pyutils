@@ -103,7 +103,7 @@ def cNFW(m,z=0,virial=False,method='d15'):
         cosmology.setCurrent(cosmoP18)
         return colossus_cNFW(m, 'vir' if virial else '200c', z, model='diemer15') / 10**0.16
     else:
-        print 'did not recognize given mass-concentration relation',relation,'!  Aborting...'
+        print('did not recognize given mass-concentration relation',relation,'!  Aborting...')
         exit()
 
 
@@ -205,10 +205,10 @@ def mf_cdm(m,mhost=1e12):
         return 1.88e-3 * m**-1.87 * mhost  # m in MSUN, from Dooley+ 2017a (infall mass)
     elif CDM_MF == 'gk14':
         #mf_cdm = lambda m: 1.11 * (m/)**-1.87 * MHOST  # m in MSUN, from GK's ELVIS paper
-        print 'no support for GK14 ELVIS subhalo MF!  Aborting...'
+        print('no support for GK14 ELVIS subhalo MF!  Aborting...')
         exit()
     else:
-        print 'no support for CDM MF',CDM_MF,'! Aborting...'
+        print('no support for CDM MF',CDM_MF,'! Aborting...')
         exit()
 
 
@@ -220,7 +220,7 @@ if WDM_MF == 'schneider':
 elif WDM_MF == 'lovell':
     BETA, GAMMA = 0.99,2.7  # Lovell+ 2014
 else:
-    print 'no support for WDM MF',WDM_MF,'! Aborting...'
+    print('no support for WDM MF',WDM_MF,'! Aborting...')
     exit()
 
 def mass_hm(mWDM):
