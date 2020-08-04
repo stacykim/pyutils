@@ -4,7 +4,8 @@ import numpy as np
 
 
 
-path = '/vol/ph/astro_data/shared/morkney/EDGE'
+#path = '/vol/ph/astro_data/shared/morkney/EDGE/tangos'
+path = '/home/stacykim/research/sims/edge'
 
 def Tangos_load(sim, redshift):
 
@@ -12,7 +13,7 @@ def Tangos_load(sim, redshift):
 
   print('Loading %s at z=%.2f' % (sim, redshift))
 
-  tangos.core.init_db('{}/tangos/{}.db'.format(path, sim.split('_')[0]))
+  tangos.core.init_db('{}/{}.db'.format(path, sim.split('_')[0]))
   session = tangos.core.get_default_session()
 
   # Find the output closest to this redshift:
