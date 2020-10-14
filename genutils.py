@@ -6,6 +6,7 @@ from scipy.interpolate import interp1d
 from scipy.optimize import brentq
 
 from colossus.cosmology import cosmology
+from colossus.halo.mass_defs import changeMassDefinition
 from colossus.halo.concentration import concentration as colossus_cNFW
 
 cosmoWMAP5 = cosmology.setCosmology('WMAP5')
@@ -20,8 +21,6 @@ WDM_MF = 'schneider'
 
 # =============================================================================================
 # CONSTANTS
-
-h           = 0.671             # normalized hubble's constant
 
 PC          = 3.086e18        # in cm
 KPC         = 1e3*PC          # in cm
@@ -40,23 +39,19 @@ G           = 6.67e-8         # in cgs
 # =============================================================================================
 # GENERAL REDSHIFT-DEPENDENT QUANTITIES
 
-#from astropy.cosmology import FlatLambdaCDM, z_at_value
-#import astropy.units as u
-#cosmo = FlatLambdaCDM(H0=h*100,Om0=0.3)  # use this fxn to calculate age(z)
+def rho_bar(z,method='d15'):  # in MSUN/KPC^3
+    if   method == 'd08':      return cosmoWMAP5.rho_m(z) * (cosmoWMAP5.Hz(z)/100.)**2  # Duffy+ 2008
+    elif method == 'd14':      return cosmoP13.rho_m(z) * (cosmoP13.Hz(z)/100.)**2   # Dutton+ 2014
+    elif method == 'd15-wmap': return cosmoWMAP5.rho_m(z) * (cosmoWMAP5.Hz(z)/100.)**2  # cosmology in Duffy+ 2008 but DJ19 c-M relation
+    elif 'd15' in method:      return cosmoP18.rho_m(z) * (cosmoP18.Hz(z)/100.)**2   # Diemer & Joyce 2019
 
-def rho_bar(z,cNFW_method='d15'):  # in MSUN/KPC^3
-    if   cNFW_method == 'd08':      return cosmoWMAP5.rho_m(z)  # Duffy+ 2008
-    elif cNFW_method == 'd14':      return cosmoP13.rho_m(z)    # Dutton+ 2014
-    elif cNFW_method == 'd15-wmap': return cosmoWMAP5.rho_m(z)  # cosmology in Duffy+ 2008 but DJ19 c-M relation
-    elif 'd15' in cNFW_method:      return cosmoP18.rho_m(z)    # Diemer & Joyce 2019
+def h(z,method='d15'):  # returns H(z)/100.
+    if   method == 'd08':      return cosmoWMAP5.Hz(z)/100.  # Duffy+ 2008
+    elif method == 'd14':      return cosmoP13.Hz(z)/100.    # Dutton+ 2014
+    elif method == 'd15-wmap': return cosmoWMAP5.Hz(z)/100.  # cosmology in Duffy+ 2008 but DJ19 c-M relation
+    elif 'd15' in method:      return cosmoP18.Hz(z)/100.    # Diemer & Joyce 2019
 
-def h(z,cNFW_method='d15'):  # returns H0 in units of km/s/Mpc
-    if   cNFW_method == 'd08':      return cosmoWMAP5.Ez(z)  # Duffy+ 2008
-    elif cNFW_method == 'd14':      return cosmoP13.Ez(z)    # Dutton+ 2014
-    elif cNFW_method == 'd15-wmap': return cosmoWMAP5.Ez(z)  # cosmology in Duffy+ 2008 but DJ19 c-M relation
-    elif 'd15' in cNFW_method:      return cosmoP18.Ez(z)    # Diemer & Joyce 2019
-
-def age(z,method='d15'):
+def age(z,method='d15'):  # in Gyr
     if   method == 'd08':      return cosmoWMAP5.age(z)  # Duffy+ 2008
     elif method == 'd14':      return cosmoP13.age(z)    # Dutton+ 2014
     elif method == 'd15-wmap': return cosmoWMAP5.age(z)  # cosmology in Duffy+ 2008 but DJ19 c-M relation
@@ -64,10 +59,16 @@ def age(z,method='d15'):
 
 def rhoc(z,method='d15'):
     #rhoc  = 3/(8*pi*G) * (7.0/PC)**2 # critical density in g/cm^3
-    if   method == 'd08':      return cosmoWMAP5.rho_c(z) * MSUN * (cosmoWMAP5.Hz(z)/100)**2 / KPC**3 # Duffy+ 2008
-    elif method == 'd14':      return cosmoP13.rho_c(z)   * MSUN * (cosmoP13.Hz(z)/100)**2   / KPC**3 # Dutton+ 2014
-    elif method == 'd15-wmap': return cosmoWMAP5.rho_c(z) * MSUN * (cosmoWMAP5.Hz(z)/100)**2 / KPC**3  # cosmology in Duffy+ 2008 but DJ19 c-M relation
-    elif 'd15' in method:      return cosmoP18.rho_c(z)   * MSUN * (cosmoP18.Hz(z)/100)**2   / KPC**3 # Diemer & Joyce 2019
+    if   method == 'd08':      return cosmoWMAP5.rho_c(z) * (cosmoWMAP5.Hz(z)/100)**2 * MSUN/KPC**3 # Duffy+ 2008
+    elif method == 'd14':      return cosmoP13.rho_c(z)   * (cosmoP13.Hz(z)  /100)**2 * MSUN/KPC**3 # Dutton+ 2014
+    elif method == 'd15-wmap': return cosmoWMAP5.rho_c(z) * (cosmoWMAP5.Hz(z)/100)**2 * MSUN/KPC**3 # cosmology in Duffy+ 2008 but DJ19 c-M relation
+    elif 'd15' in method:      return cosmoP18.rho_c(z)   * (cosmoP18.Hz(z)  /100)**2 * MSUN/KPC**3 # Diemer & Joyce 2019
+
+def omega_m(z,method='d15'):
+    if   method == 'd08'     : return cosmoWMAP5.Om(z)
+    elif method == 'd14'     : return cosmoP13.Om(z)
+    elif method == 'd15-wmap': return cosmoWMAP5.Om(z)
+    elif 'd15' in method:      return cosmoP18.Om(z)
 
 
 
@@ -127,8 +128,13 @@ def cNFW(m,z=0,virial=False,method='d15', wdm=False,mWDM=5.):
         print 'did not recognize given mass-concentration relation',relation,'!  Aborting...'
         exit()
 
-    if not wdm:  return c
-    else:        return c*(1 + GAMMA1*mass_hm(mWDM,cNFW_method=method)/m)**(-GAMMA2)  # Schneider+ 2012
+    if not wdm:
+        return c
+    else:
+        hz = h(z,method=method)
+        m1m_div_h, r1m_div_h, c1m = changeMassDefinition(m/hz, c, z, '200c', '1m')  # Schneider+ 2012 uses rho_bar in mass def
+        m1m = m1m_div_h * hz
+        return c*(1 + GAMMA1*mass_hm(mWDM,cNFW_method=method)/m1m)**(-GAMMA2)  # Schneider+ 2012
 
 
 # WDM concentrations from Schneider+ 2012
@@ -243,7 +249,6 @@ def mf_cdm(m,mhost=1e12):
 
 
 # WDM mass function definitions
-OMEGA_WDM = 0.25   # WDM contribution to mass-energy budget of universe
 MU        = 1.12   # exponent in transfer function in Schneider+ 2012
 if WDM_MF == 'schneider':
     BETA, GAMMA = 1.16,1  # Schneider+ 2012
@@ -254,7 +259,14 @@ else:
     exit()
 
 def mass_hm(mWDM,cNFW_method='d15'):
-    alpha_hm  = 49.0 * mWDM**-1.11 * (OMEGA_WDM/0.25)**0.11 * (h(0,cNFW_method=cNFW_method)/0.7)**1.22 / h(0,cNFW_method=cNFW_method) # kpc # incorrectly had (H/0.7)*1.22 here, 10/30/17
+    """
+    Returns the WDM half-mode mass in MSUN.
+    """
+    h0        = h      (0,method=cNFW_method)
+    rho_bar0  = rho_bar(0,method=cNFW_method)
+    OMEGA_WDM = omega_m(0,method=cNFW_method)
+    
+    alpha_hm  = 49.0 * mWDM**-1.11 * (OMEGA_WDM/0.25)**0.11 * (h0/0.7)**1.22 / h0 # kpc # incorrectly had (H/0.7)*1.22 here, 10/30/17
     lambda_hm = 2*pi* alpha_hm * (2**(MU/5.) - 1)**(-1./2/MU)
-    return  4*pi/3 * rho_bar(0,cNFW_method=cNFW_method) * (lambda_hm/2)**3
+    return  4*pi/3 * rho_bar0 * (lambda_hm/2)**3
 
