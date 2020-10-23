@@ -4,8 +4,8 @@ import numpy as np
 
 
 
-#path = '/vol/ph/astro_data/shared/morkney/EDGE/tangos'
-path = '/home/stacykim/research/sims/edge'
+path = '/vol/ph/astro_data/shared/morkney/EDGE/tangos'
+#path = '/home/stacykim/research/sims/edge'
 
 def Tangos_load(sim, redshift):
 

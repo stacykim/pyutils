@@ -2,6 +2,7 @@
 # created 2020.03.20 by stacy kim
 
 from numpy import *
+from numpy.random import normal
 import matplotlib as mpl
 mpl.use('PDF')
 import matplotlib.pyplot as plt
@@ -43,6 +44,7 @@ def sfh(t, dt, z, vmax, vthres=26., zre=4.,binning='3bins',sfr_pre_method='fiduc
        'all' sim points
        '2bins' pre/post reion, with pre-SFR from <vmax(z>zre)>, post-SFR from vmax(z=0)
        '3bins' which adds SFR = 0 phase after reion while vmax < vthres
+       'scatter' which, assuming a lognormal scatter, samples the SFR randomly at each t
     """
     if z[0] < zre: vavg_pre = 0.
     else:
@@ -58,13 +60,16 @@ def sfh(t, dt, z, vmax, vthres=26., zre=4.,binning='3bins',sfr_pre_method='fiduc
         return array([ sfr_pre(vavg_pre,method=sfr_pre_method) if zz > zre else sfr_post(vmax[-1]) for vv,zz in zip(vmax,z) ])
     elif binning == '3bins':
         return array([ sfr_pre(vavg_pre,method=sfr_pre_method) if zz > zre else (sfr_post(vmax[-1]) if vv > vthres else 0) for vv,zz in zip(vmax,z) ])
-
+    elif binning == 'scatter':
+        #pre_scatter = 10**normal(0,0.4)
+        #return array([ sfr_pre(vavg_pre,method=sfr_pre_method) * pre_scatter if zz > zre else sfr_post(vv) * 10**normal(0,0.3) for vv,zz in zip(vmax,z) ])
+        return array([ sfr_pre(vavg_pre,method=sfr_pre_method) * 10**normal(0,0.4) if zz > zre else sfr_post(vv) * 10**normal(0,0.3) for vv,zz in zip(vmax,z) ])
 
 
 ##################################################
 # ACCRETED STARS
 
-def accreted_stars(halo, vthres=26., zre=4., binning='3bins', plot_mergers=False, timestep=0.250,verbose=False):
+def accreted_stars(halo, vthres=26., zre=4., binning='3bins', plot_mergers=False, timestep=0.250,verbose=False, nscatter=10):
     """
     Returns redshift, major/minor mass ratio, halo objects, and stellar mass accreted 
     for each of the given halo's mergers.  Does not compute the stellar contribution
@@ -83,7 +88,7 @@ def accreted_stars(halo, vthres=26., zre=4., binning='3bins', plot_mergers=False
         plt.plot(t,vmax,color='k')
   
     zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(halo)
-    msmerge = zeros(len(zmerge))
+    msmerge = zeros(len(zmerge)) if binning != 'scatter' else zeros((len(zmerge),nscatter))
   
     # record main branch components
     halos = {}
@@ -157,11 +162,17 @@ def accreted_stars(halo, vthres=26., zre=4., binning='3bins', plot_mergers=False
         vv_sub = array([ max(vv_sub[:i+1]) for i in range(len(vv_sub)) ])  # vmaxes fall before infall, so use max vmax (after smoothing)
         dt_sub = array([timestep]) if len(tt_sub)==1 else tt_sub[1:]-tt_sub[:-1] # len(dt_sub) = len(tt_sub)-1
         
-        sfh_binned_sub = sfh(tt_sub,dt_sub,zz_sub,vv_sub,vthres=vthres,zre=zre,binning=binning)
-        mstar_binned_sub = array( [0] + [ sum(sfh_binned_sub[:i+1] * 1e9*dt_sub[:i+1]) for i in range(len(dt_sub)) ] ) # sfh_binned_sub
-        msmerge[im] = mstar_binned_sub[-1]
-        #mstar_main = interp(zmerge[im],zz[::-1],mstar_binned[::-1])
-        #print('merger',im,'at z = {0:4.2f}'.format(zmerge[im]),'with {0:5.1e}'.format(mstar_binned_merge[im]),'msun stars vs {0:5.1e}'.format(mstar_main),'msun MAIN =',int(100.*mstar_binned_merge[im]/mstar_main),'%')
+        if binning != 'scatter':
+            sfh_binned_sub = sfh(tt_sub,dt_sub,zz_sub,vv_sub,vthres=vthres,zre=zre,binning=binning)
+            mstar_binned_sub = array( [0] + [ sum(sfh_binned_sub[:i+1] * 1e9*dt_sub[:i+1]) for i in range(len(dt_sub)) ] ) # sfh_binned_sub
+            msmerge[im] = mstar_binned_sub[-1]
+            #mstar_main = interp(zmerge[im],zz[::-1],mstar_binned[::-1])
+            #print('merger',im,'at z = {0:4.2f}'.format(zmerge[im]),'with {0:5.1e}'.format(mstar_binned_merge[im]),'msun stars vs {0:5.1e}'.format(mstar_main),'msun MAIN =',int(100.*mstar_binned_merge[im]/mstar_main),'%')
+        else:
+            for iis in range(nscatter):
+                sfh_binned_sub = sfh(tt_sub,dt_sub,zz_sub,vv_sub,vthres=vthres,zre=zre,binning='scatter')
+                mstar_binned_sub = array( [0] + [ sum(sfh_binned_sub[:i+1] * 1e9*dt_sub[:i+1]) for i in range(len(dt_sub)) ] ) # sfh_binned_sub
+                msmerge[im,iis] = mstar_binned_sub[-1]
 
         if plot_mergers and implot < 10:
             plt.plot(t_sub,vmax_sub,color='C'+str(im),alpha=0.25)
