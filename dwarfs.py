@@ -83,16 +83,16 @@ dwarfsM31 = {'M32'        : {'type': 'm31', 'mv': -16.4, 'mstar': 3.2e8, 'dm31':
 # 'Isolated' Local Group dwarfs (from McConnachie+ 2012)
 #             name                                  v-band Mabs  MSUN             kpc            velocity disp, error (km/s)          reff (pc)
 isolatedLG = {'And XXVIII'   : {'type': 'LG'     , 'mv':  -8.5, 'mstar':  2.1e5, 'dsun':  661., 'sigma': None, 'sigerr':       None, 'reff':  213.},
-              #'IC 1613'      : {'type': 'LG'     , 'mv': -15.2, 'mstar':  1.0e8, 'dsun':  755., 'sigma': None, 'sigerr':       None, 'reff': 1496.},
+              'IC 1613'      : {'type': 'LG'     , 'mv': -15.2, 'mstar':  1.0e8, 'dsun':  755., 'sigma': None, 'sigerr':       None, 'reff': 1496.}, # HERE
               'Phoenix'      : {'type': 'LG'     , 'mv':  -9.9, 'mstar':  7.7e5, 'dsun':  415., 'sigma': None, 'sigerr':       None, 'reff':  454.},
               'NGC 6822'     : {'type': 'LG'     , 'mv': -15.2, 'mstar':  1.0e8, 'dsun':  459., 'sigma': None, 'sigerr':       None, 'reff':  354.},
               'Cetus'        : {'type': 'LG'     , 'mv': -11.2, 'mstar':  2.6e6, 'dsun':  755., 'sigma': 17.0, 'sigerr':        2.0, 'reff':  703.},
               'Pegasus dIrr' : {'type': 'LG'     , 'mv': -12.2, 'mstar': 6.61e6, 'dsun':  920., 'sigma': None, 'sigerr':       None, 'reff':  562.},
-              #'Leo T'        : {'type': 'LG'     , 'mv':  -8.0, 'mstar':  1.4e5, 'dsun':  417., 'sigma':  7.5, 'sigerr':        1.6, 'reff':  120.},
-              #'WLM'          : {'type': 'LG'     , 'mv': -14.2, 'mstar':  4.3e7, 'dsun':  933., 'sigma': 17.5, 'sigerr':        2.0, 'reff': 2111.},
+              'Leo T'        : {'type': 'LG'     , 'mv':  -8.0, 'mstar':  1.4e5, 'dsun':  417., 'sigma':  7.5, 'sigerr':        1.6, 'reff':  120.}, # HERE
+              'WLM'          : {'type': 'LG'     , 'mv': -14.2, 'mstar':  4.3e7, 'dsun':  933., 'sigma': 17.5, 'sigerr':        2.0, 'reff': 2111.}, # HERE
               'Leo A'        : {'type': 'LG'     , 'mv': -12.1, 'mstar':  6.0e6, 'dsun':  798., 'sigma':  9.3, 'sigerr':        1.3, 'reff':  499.},
               'And XVIII'    : {'type': 'LG'     , 'mv':  -9.7, 'mstar':  6.3e5, 'dsun': 1355., 'sigma': None, 'sigerr':       None, 'reff':  363.},
-              #'Aquarius'     : {'type': 'LG'     , 'mv': -10.6, 'mstar':  1.6e6, 'dsun': 1072., 'sigma': None, 'sigerr':       None, 'reff':  458.},
+              'Aquarius'     : {'type': 'LG'     , 'mv': -10.6, 'mstar':  1.6e6, 'dsun': 1072., 'sigma': None, 'sigerr':       None, 'reff':  458.}, # HERE
               'Tucana'       : {'type': 'LG'     , 'mv':  -9.5, 'mstar':  5.6e5, 'dsun':  887., 'sigma': 15.8, 'sigerr':  [3.1,4.1], 'reff':  284.},
               'Sag dIrr'     : {'type': 'LG'     , 'mv': -11.5, 'mstar':  3.5e6, 'dsun': 1067., 'sigma': None, 'sigerr':       None, 'reff':  282.},
               'UGC 4879'     : {'type': 'LG'     , 'mv': -12.5, 'mstar':  8.3e6, 'dsun': 1361., 'sigma': None, 'sigerr':       None, 'reff':  162.},
@@ -111,7 +111,7 @@ isolatedLG = {'And XXVIII'   : {'type': 'LG'     , 'mv':  -8.5, 'mstar':  2.1e5,
               'KKR 3'        : {'type': 'LG'     , 'mv':  -9.5, 'mstar':  5.4e5, 'dsun': 2188., 'sigma': None, 'sigerr':       None, 'reff':  229.},
               'GR 8'         : {'type': 'LG'     , 'mv': -12.2, 'mstar':  6.4e6, 'dsun': 2178., 'sigma': None, 'sigerr':       None, 'reff':  203.},
               'UGC 9128'     : {'type': 'LG'     , 'mv': -12.4, 'mstar':  7.8e6, 'dsun': 2291., 'sigma': None, 'sigerr':       None, 'reff':  427.},
-              #'UGC 8508'     : {'type': 'LG'     , 'mv': -13.4, 'mstar':  1.9e7, 'dsun': 2582., 'sigma': None, 'sigerr':       None, 'reff':  315.},
+              'UGC 8508'     : {'type': 'LG'     , 'mv': -13.4, 'mstar':  1.9e7, 'dsun': 2582., 'sigma': None, 'sigerr':       None, 'reff':  315.}, # HERE
               'IC 3104'      : {'type': 'LG'     , 'mv': -14.0, 'mstar':  6.2e7, 'dsun': 2270., 'sigma': None, 'sigerr':       None, 'reff': 1327.},
               'DDO 125'      : {'type': 'LG'     , 'mv': -14.4, 'mstar':  4.7e7, 'dsun': 2582., 'sigma': None, 'sigerr':       None, 'reff':  781.},
               'UGCA 86'      : {'type': 'LG'     , 'mv': -13.2, 'mstar':  1.6e7, 'dsun': 2965., 'sigma': None, 'sigerr':       None, 'reff':  811.},
