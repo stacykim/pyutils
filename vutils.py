@@ -230,6 +230,10 @@ def Reff(m200,profile,cK=5.,mleft=1,zin=0.,sigmaSI=None,mcore_thres=None,nostrip
     if (not hasattr(mstar,'__iter__')) and mstar==None:
         if   smhm=='m13':
             mstar = moster13(m200,z=zin) #exp(mstarM13(log(m200)))
+        if smhm=='m13+1sig':
+            mstar = moster13(m200,z=zin)*10.
+        if smhm=='m13-1sig':
+            mstar = moster13(m200,z=zin)/10.
         elif smhm=='b13':
             mstar = exp(mstarB13(log(m200)))
         elif smhm=='b14':
@@ -237,6 +241,10 @@ def Reff(m200,profile,cK=5.,mleft=1,zin=0.,sigmaSI=None,mcore_thres=None,nostrip
 
     if   reff=='r17': # fit to isolated dwarfs from Read+2017 and McConnachie+ 2012, taking repeats out from M12, and no Leo T
         Re = 10**(0.268*log10(mstar)-2.11)
+    elif reff=='r17+1s':
+        Re = 10**(0.268*log10(mstar)-2.11 + 0.234)
+    elif reff=='r17-1s':
+        Re = 10**(0.268*log10(mstar)-2.11 - 0.234)
     elif reff=='d18':
         Re = 10**(0.23*log10(mstar)-1.93)  # 2D half-light radius from shany's 2018 paper (assumes V-band mass-to-light ratio = 2.0)
     elif reff=='j18':
