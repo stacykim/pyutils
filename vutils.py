@@ -238,6 +238,19 @@ def Reff(m200,profile,cK=5.,mleft=1,zin=0.,sigmaSI=None,mcore_thres=None,nostrip
             mstar = exp(mstarB13(log(m200)))
         elif smhm=='b14':
             mstar = exp(mstarB14(log(m200)))
+        elif smhm=='d17':
+            mstar = exp(mstarD17(log(m200)))
+        elif smhm=='d17+1sig':
+            mstar = exp(mstarD17(log(m200))) * 10**0.4
+        elif smhm=='d17-1sig':
+            mstar = exp(mstarD17(log(m200))) * 10**-0.4
+        elif smhm=='m21':
+            mstar = exp(mstarM21(log(m200)))
+        elif smhm=='m21+1sig':
+            mstar = exp(mstarM21(log(m200))) * 10**array([0.3 if mm > 1e10 else (0.3-0.43*(log10(mm)-10)) for mm in m200])
+        elif smhm=='m21-1sig':
+            mstar = exp(mstarM21(log(m200))) * 10**-array([0.3 if mm > 1e10 else (0.3-0.43*(log10(mm)-10)) for mm in m200])
+
 
     if   reff=='r17': # fit to isolated dwarfs from Read+2017 and McConnachie+ 2012, taking repeats out from M12, and no Leo T
         Re = 10**(0.268*log10(mstar)-2.11)

@@ -14,7 +14,7 @@ cosmoP13   = cosmology.setCosmology('planck13')
 cosmoP15   = cosmology.setCosmology('planck15')
 cosmoP18   = cosmology.setCosmology('planck18') # default
 
-DIR = '' #'/Users/hgzxbprn/Documents/research/pyutils/'
+DIR = '/Users/hgzxbprn/Documents/research/pyutils/'
 
 CDM_MF = 'd17'
 WDM_MF = 'schneider'
@@ -214,6 +214,16 @@ mhB13,msB13 = loadtxt(DIR+'behroozi.dat' ,unpack=True)
 mhaloB13 = interp1d(log(msB13),log(mhB13),kind='linear',fill_value='extrapolate',bounds_error=False)
 mstarB13 = interp1d(log(mhB13),log(msB13),kind='linear',fill_value='extrapolate',bounds_error=False)
 
+# Behroozi+ 2013 redshift-dependent SMHM relation (all in MSUN units)
+
+
+def behroozi13(mhalo,z=0.):
+    """
+    Gives M* given Mhalo, all in MSUN units.
+    """
+    return 1
+
+
 
 # Brook+ 2014 z=0 relation
 f = lambda c,x: (log(1+c)-c/(1+c))*(350/200.)*x**3 - log(1+c*x) + 1/(1+1/c/x)  # fxn to find root for R350 (see pg. 5B of cat notebook)
@@ -230,6 +240,17 @@ mh200B14 = interp(mh350B14,m350[::-1],m200[::-1])  # mhalo = peak M350, convert 
 mhaloB14 = interp1d(log(msB14),log(mh200B14),kind='linear',fill_value='extrapolate',bounds_error=False)
 mstarB14 = interp1d(log(mh200B14),log(msB14),kind='linear',fill_value='extrapolate',bounds_error=False)
 
+
+# Dooley+ 2017 tuned-bent model
+mhD17,msD17 = loadtxt(DIR+'dooley.dat' ,unpack=True)
+mhaloD17 = interp1d(log(msD17),log(mhD17),kind='linear',fill_value='extrapolate',bounds_error=False)
+mstarD17 = interp1d(log(mhD17),log(msD17),kind='linear',fill_value='extrapolate',bounds_error=False)
+
+
+# Munshi+ 2021 model
+log10mhM21,log10msM21 = loadtxt(DIR+'munshi.dat' ,unpack=True)
+mhaloM21 = interp1d(log(10**log10msM21),log(10**log10mhM21),kind='linear',fill_value='extrapolate',bounds_error=False)
+mstarM21 = interp1d(log(10**log10mhM21),log(10**log10msM21),kind='linear',fill_value='extrapolate',bounds_error=False)
 
 
 # ==============================================================================
