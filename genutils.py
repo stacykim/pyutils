@@ -40,10 +40,10 @@ G           = 6.67e-8         # in cgs
 # GENERAL REDSHIFT-DEPENDENT QUANTITIES
 
 def rho_bar(z,method='d15'):  # in MSUN/KPC^3
-    if   method == 'd08':      return cosmoWMAP5.rho_m(z) * (cosmoWMAP5.Hz(z)/100.)**2  # Duffy+ 2008
-    elif method == 'd14':      return cosmoP13.rho_m(z) * (cosmoP13.Hz(z)/100.)**2   # Dutton+ 2014
-    elif method == 'd15-wmap': return cosmoWMAP5.rho_m(z) * (cosmoWMAP5.Hz(z)/100.)**2  # cosmology in Duffy+ 2008 but DJ19 c-M relation
-    elif 'd15' in method:      return cosmoP18.rho_m(z) * (cosmoP18.Hz(z)/100.)**2   # Diemer & Joyce 2019
+    if   method == 'd08':      return cosmoWMAP5.rho_m(z) / (cosmoWMAP5.Hz(0)/100.)**2  # Duffy+ 2008
+    elif method == 'd14':      return cosmoP13.rho_m(z)   / (cosmoP13.Hz(0)/100.)**2   # Dutton+ 2014
+    elif method == 'd15-wmap': return cosmoWMAP5.rho_m(z) / (cosmoWMAP5.Hz(0)/100.)**2  # cosmology in Duffy+ 2008 but DJ19 c-M relation
+    elif 'd15' in method:      return cosmoP18.rho_m(z)   / (cosmoP18.Hz(0)/100.)**2   # Diemer & Joyce 2019
 
 def h(z,method='d15'):  # returns H(z)/100.
     if   method == 'd08':      return cosmoWMAP5.Hz(z)/100.  # Duffy+ 2008
@@ -59,10 +59,10 @@ def age(z,method='d15'):  # in Gyr
 
 def rhoc(z,method='d15'):
     #rhoc  = 3/(8*pi*G) * (7.0/PC)**2 # critical density in g/cm^3
-    if   method == 'd08':      return cosmoWMAP5.rho_c(z) * (cosmoWMAP5.Hz(z)/100)**2 * MSUN/KPC**3 # Duffy+ 2008
-    elif method == 'd14':      return cosmoP13.rho_c(z)   * (cosmoP13.Hz(z)  /100)**2 * MSUN/KPC**3 # Dutton+ 2014
-    elif method == 'd15-wmap': return cosmoWMAP5.rho_c(z) * (cosmoWMAP5.Hz(z)/100)**2 * MSUN/KPC**3 # cosmology in Duffy+ 2008 but DJ19 c-M relation
-    elif 'd15' in method:      return cosmoP18.rho_c(z)   * (cosmoP18.Hz(z)  /100)**2 * MSUN/KPC**3 # Diemer & Joyce 2019
+    if   method == 'd08':      return cosmoWMAP5.rho_c(z) / (cosmoWMAP5.Hz(0)/100)**2 * MSUN/KPC**3 # Duffy+ 2008
+    elif method == 'd14':      return cosmoP13.rho_c(z)   / (cosmoP13.Hz(0)  /100)**2 * MSUN/KPC**3 # Dutton+ 2014
+    elif method == 'd15-wmap': return cosmoWMAP5.rho_c(z) / (cosmoWMAP5.Hz(0)/100)**2 * MSUN/KPC**3 # cosmology in Duffy+ 2008 but DJ19 c-M relation
+    elif 'd15' in method:      return cosmoP18.rho_c(z)   / (cosmoP18.Hz(0)  /100)**2 * MSUN/KPC**3 # Diemer & Joyce 2019
 
 def omega_m(z,method='d15'):
     if   method == 'd08'     : return cosmoWMAP5.Om(z)
@@ -94,47 +94,50 @@ def nfw_vmax(m,z=0,cNFW_method='d15',wdm=False,mWDM=5.):
 # =============================================================================================
 # MASS-CONCENTRATION RELATIONS
 
-def cNFW(m,z=0,virial=False,method='d15', wdm=False,mWDM=5.):
+def cNFW(m,z=0,virial=False,method='d15', wdm=False,mWDM=5.,massdef=None):
     """
     Returns the NFW concentration, calculated according to the given mass concentration relation 'method'.
     Written to use the versions from COLOSSUS by Diemer+ 2017, but can use versions I coded up by uncommenting them.
     Supports WDM concentrations as given by Schneider+ 2012's relation, given mWDM in keV.
     https://bdiemer.bitbucket.io/colossus/halo_concentration.html
     """
+
+    if massdef==None:  massdef = 'vir' if virial else '200c'
+    h0 = h(0,method=method)
+
     if   method=='d08':
         #return duffy08 (m,z=z,virial=virial)
         cosmology.setCurrent(cosmoWMAP5)
-        c = colossus_cNFW(m, 'vir' if virial else '200c', z, model='duffy08')
+        c = colossus_cNFW(m/h0, massdef, z, model='duffy08')
     elif method=='d14':
         #return dutton14(m,z=z,virial=virial)
         cosmology.setCurrent(cosmoP13)
-        c = colossus_cNFW(m, 'vir' if virial else '200c', z, model='dutton14')
+        c = colossus_cNFW(m/h0, massdef, z, model='dutton14')
     elif method=='d15': # Diemer & Joyce 2019
         cosmology.setCurrent(cosmoP18)
         #cosmology.setCurrent(cosmoWMAP5)
-        c = colossus_cNFW(m, 'vir' if virial else '200c', z, model='diemer15')
+        c = colossus_cNFW(m/h0, massdef, z, model='diemer15')
 
     elif method=='d15+1s': # Diemer & Joyce 2019
         cosmology.setCurrent(cosmoP18)
-        c = colossus_cNFW(m, 'vir' if virial else '200c', z, model='diemer15') * 10**0.16
+        c = colossus_cNFW(m/h0, massdef, z, model='diemer15') * 10**0.16
     elif method=='d15-1s': # Diemer & Joyce 2019
         cosmology.setCurrent(cosmoP18)
-        c = colossus_cNFW(m, 'vir' if virial else '200c', z, model='diemer15') / 10**0.16
+        c = colossus_cNFW(m/h0, massdef, z, model='diemer15') / 10**0.16
     elif method=='d15-wmap':
         cosmology.setCurrent(cosmoWMAP5)
-        c = colossus_cNFW(m, 'vir' if virial else '200c', z, model='diemer15')
+        c = colossus_cNFW(m/h0, massdef, z, model='diemer15')
 
     else:
-        print 'did not recognize given mass-concentration relation',relation,'!  Aborting...'
+        print('did not recognize given mass-concentration relation',relation,'!  Aborting...')
         exit()
 
     if not wdm:
         return c
     else:
-        hz = h(z,method=method)
-        m1m_div_h, r1m_div_h, c1m = changeMassDefinition(m/hz, c, z, '200c', '1m')  # Schneider+ 2012 uses rho_bar in mass def
-        m1m = m1m_div_h * hz
-        return c*(1 + GAMMA1*mass_hm(mWDM,cNFW_method=method)/m1m)**(-GAMMA2)  # Schneider+ 2012
+        m1m_div_h, r1m_div_h, c1m = changeMassDefinition(m/h0, c, z, '200c', '1m')  # Schneider+ 2012 uses rho_bar in mass def
+        m1m = m1m_div_h * h0
+        return c * (1 + GAMMA1*mass_hm(mWDM,cNFW_method=method)/m1m)**(-GAMMA2)  # Schneider+ 2012
 
 
 # WDM concentrations from Schneider+ 2012
@@ -154,7 +157,7 @@ Avir_DUFFY = 5.71     # coefficient
 Bvir_DUFFY = -0.084   # mass scaling
 Cvir_DUFFY = -0.47    # redshift scaling
 
-MPIVOT  = 2e12/cosmoWMAP5.Ez(0)   # 2e12/h = mormalized mass, in MSUN
+MPIVOT  = 2e12/(cosmoWMAP5.Hz(0)/100.)   # 2e12/h = mormalized mass, in MSUN
 
 def duffy08(m,z=0,virial=False):
     # m = mass in MSUN
@@ -262,10 +265,10 @@ def mf_cdm(m,mhost=1e12):
         return 1.88e-3 * m**-1.87 * mhost  # m in MSUN, from Dooley+ 2017a (infall mass)
     elif CDM_MF == 'gk14':
         #mf_cdm = lambda m: 1.11 * (m/)**-1.87 * MHOST  # m in MSUN, from GK's ELVIS paper
-        print 'no support for GK14 ELVIS subhalo MF!  Aborting...'
+        print('no support for GK14 ELVIS subhalo MF!  Aborting...')
         exit()
     else:
-        print 'no support for CDM MF',CDM_MF,'! Aborting...'
+        print('no support for CDM MF',CDM_MF,'! Aborting...')
         exit()
 
 
@@ -276,7 +279,7 @@ if WDM_MF == 'schneider':
 elif WDM_MF == 'lovell':
     BETA, GAMMA = 0.99,2.7  # Lovell+ 2014
 else:
-    print 'no support for WDM MF',WDM_MF,'! Aborting...'
+    print('no support for WDM MF',WDM_MF,'! Aborting...')
     exit()
 
 def mass_hm(mWDM,cNFW_method='d15'):

@@ -33,20 +33,16 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
     mWDM      = mass of WDM particle, in keV; need to specify wdm=True if want wdm
     """
     
-    # assume everything given in M200c units, and switch to Mvir=M100c, which is system P10 worked in
+    hz = h(zin,method=cNFW_method)
+
+    # assume everything given in M200c units, and switch to M100c, which is system P10 worked in
     c200 = cNFW(m200,z=zin,virial=False,method=cNFW_method,wdm=wdm,mWDM=mWDM)
     rs,r200 = nfw_r(m200,c200,z=zin,cNFW_method=cNFW_method)  # rs doesn't change with halo def
 
-    fNFW = lambda xx: log(1+xx) - xx/(1+xx)
-    f = lambda r,mm,rrs,cc: mm*MSUN * fNFW(r/rrs)/fNFW(cc) / (4*pi/3 * (r*KPC)**3) - 100*rhoc(zin,method=cNFW_method)
-    if hasattr(r200,'__iter__'):
-        rvir = array([ root(f,x0=1.1*rr200,args=(mm,rrs,cc)).x[0] for rr200,mm,rrs,cc in zip(r200,m200,rs,c200) ])
-    else:
-        rvir = root(f,x0=1.1*r200,args=(m200,rs,c200)).x[0]
-    mvir = m200*fNFW(rvir/rs)/fNFW(c200)
-    c = cNFW(mvir,z=zin,virial=True,method=cNFW_method,wdm=wdm,mWDM=mWDM)
-    
+    m100_div_h, r100_div_h, c100 = changeMassDefinition(m200/hz, c200, zin, '200c', '100c')
+    m100,r100 = m100_div_h * hz, r100_div_h * hz
 
+    # switch from mleft200 to mleft100
     while (not hasattr(mleft100,'__iter__')) and mleft100 == None:
 
         # if no tidal stripping, then set mleft100 = 1 or ones(N)
@@ -59,7 +55,7 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
             break
 
         # else solve for corresponding mleft100
-        f = lambda ml100,mm,rr: menc(rr,mm,profile,mleft=mleft,mleft100=ml100,zin=zin,sigmaSI=sigmaSI,fudge=fudge,stretch=stretch,mcore_thres=mcore_thres,cNFW_method=cNFW_method,wdm=wdm,mWDM=mWDM)/mm - mleft
+        f = lambda ml100,mm,rr: menc(rr,mm,profile,mleft100=ml100,zin=zin,sigmaSI=sigmaSI,fudge=fudge,stretch=stretch,mcore_thres=mcore_thres,cNFW_method=cNFW_method,wdm=wdm,mWDM=mWDM)/mm - mleft
         if (hasattr(mleft,'__iter__') and len(mleft) > 1) or (hasattr(m200,'__iter__') and len(m200) > 1):  # solve for multiple subs at once
             x0 = mleft if (hasattr(mleft,'__iter__') and len(mleft) > 1) else mleft*ones(len(m200))
             mleft100 = array([ root(f,x0=xx0,args=(mm200,rr200)).x[0] for rr200,mm200,xx0 in zip(r200,m200,x0) ])
@@ -76,14 +72,16 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
     # now calculate mass enclosed!
     if profile=='nfw' or profile=='NFW':
 
+        #print 'mleft',mleft100,'m100',m100,'c100',c100
+
         fNFW = lambda xx: log(1+xx) - xx/(1+xx)
         fNFWstrip = lambda xx: 1./6 * xx**2 * (xx+3) / (xx+1)**3
         
-        if (not onesub and all(mleft100==ones(len(mleft100)))) or (onesub and mleft100==1):  return mvir*fNFW(renc/rs)/fNFW(c)
+        if (not onesub and all(mleft100==ones(len(mleft100)))) or (onesub and mleft100==1):  return m100*fNFW(renc/rs)/fNFW(c100)
 
         R_MU,R_ETA, V_MU,V_ETA = -0.3,0.4 , 0.4,0.3
         rmax     = 2.16258 * rs * KPC  # in cm
-        vmax     = sqrt(G * mvir*MSUN*fNFW(rmax/(rs*KPC))/fNFW(c) / rmax) # in cm/s
+        vmax     = sqrt(G * m100*MSUN*fNFW(rmax/(rs*KPC))/fNFW(c100) / rmax) # in cm/s
         rmax_new = 2**R_MU * mleft100**R_ETA / (1+mleft100)**R_MU * rmax # in cm
         vmax_new = 2**V_MU * mleft100**V_ETA / (1+mleft100)**V_MU * vmax # in cm/s
         rs_new   = rmax_new/(sqrt(7.)-2.)  # in cm
@@ -120,11 +118,11 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
         fCORE = lambda xx: log(xx+1) - 0.5*xx*(2+3*xx)/(1+xx)**2
         fCOREstrip = lambda xx: xx**3*(xx+4) / 12./(xx+1)**4
         
-        if (not onesub and all(mleft100==ones(len(mleft100)))) or (onesub and mleft100==1):  return mvir*fCORE(renc/rs)/fCORE(c)
+        if (not onesub and all(mleft100==ones(len(mleft100)))) or (onesub and mleft100==1):  return m100*fCORE(renc/rs)/fCORE(c100)
         
         R_MU,R_ETA, V_MU,V_ETA = -1.3,0.05 , 0.4,0.37
         rmax     = 4.4247 *rs * KPC  # in cm
-        vmax     = sqrt(G * mvir*MSUN*fCORE(rmax/(rs*KPC))/fCORE(c) / rmax) # in cm/s
+        vmax     = sqrt(G * m100*MSUN*fCORE(rmax/(rs*KPC))/fCORE(c100) / rmax) # in cm/s
         rmax_new = 2**R_MU * mleft100**R_ETA / (1+mleft100)**R_MU * rmax  # in cm
         vmax_new = 2**V_MU * mleft100**V_ETA / (1+mleft100)**V_MU * vmax  # in cm/s
         rs_new   = rmax_new * 2/(sqrt(57)-5)  # in cm
@@ -135,7 +133,7 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
     elif profile=='sidm' or profile=='SIDM':
 
         if sigmaSI==None:
-            print 'given profile SIDM but not sigmaSI! Aborting...'
+            print('given profile SIDM but not sigmaSI! Aborting...')
             exit()
 
         tin = age(0)  # assume it's had the entire age of universe to form core
@@ -151,19 +149,19 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
                          # I think because the concentration change for dwarfs relative to clusters shifts
                          # the relationship between vrms and vmax.
         rmax     = 2.16258 * rs * KPC  # in cm
-        vmax     = sqrt(G * mvir*MSUN*fNFW(2.16258)/fNFW(c) / rmax) # in cm/s
+        vmax     = sqrt(G * m100*MSUN*fNFW(2.16258)/fNFW(c100) / rmax) # in cm/s
     
         # r1/rs according to the prescription in Sec. 7 of Rocha+ 2013
-        if (hasattr(c,'__iter__') and len(c) > 1):
-            r1_rs = array([ brentq( lambda x: fudgeVmax*vm**3/(G*rm**2) *fNFWdens(x) * tin*GYR * sigmaSI -1. , 1e-8, cc) for vm,rm,cc in zip(vmax,rmax,c) ])
+        if (hasattr(c100,'__iter__') and len(c100) > 1):
+            r1_rs = array([ brentq( lambda x: fudgeVmax*vm**3/(G*rm**2) *fNFWdens(x) * tin*GYR * sigmaSI -1. , 1e-8, cc) for vm,rm,cc in zip(vmax,rmax,c100) ])
         else:
-            r1_rs = brentq( lambda x: fudgeVmax*vmax**3/(G*rmax**2) *fNFWdens(x) * tin*GYR * sigmaSI -1. , 1e-8, c )
+            r1_rs = brentq( lambda x: fudgeVmax*vmax**3/(G*rmax**2) *fNFWdens(x) * tin*GYR * sigmaSI -1. , 1e-8, c100 )
         rb = fudge * r1_rs  # rb/rs, currently in original form.
 
         if (not onesub and all(mleft100==ones(len(mleft100)))) or (onesub and mleft100==1):
 
-            fSIDM_inner = lambda xx: mvir*(fNFWdens(r1_rs)/fBURKdens(r1_rs/rb))*rb**3 * fBURK(xx/rb)/fNFW(c)
-            fSIDM_outer = lambda xx: mvir*(fNFW(xx) - fNFW(r1_rs))/fNFW(c) + fSIDM_inner(r1_rs)
+            fSIDM_inner = lambda xx: m100*(fNFWdens(r1_rs)/fBURKdens(r1_rs/rb))*rb**3 * fBURK(xx/rb)/fNFW(c100)
+            fSIDM_outer = lambda xx: m100*(fNFW(xx) - fNFW(r1_rs))/fNFW(c100) + fSIDM_inner(r1_rs)
             fSIDM = lambda xx: (xx > r1_rs)*fSIDM_outer(xx) + (xx <= r1_rs)*fSIDM_inner(xx)
 
             return fSIDM( renc/rs )
@@ -172,7 +170,7 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
 
             R_MU,R_ETA, V_MU,V_ETA = -0.3,0.4 , 0.4,0.3
             rmax     = 2.16258 * rs * KPC  # in cm
-            vmax     = sqrt(G * mvir*MSUN*fNFW(rmax/(rs*KPC))/fNFW(c) / rmax) # in cm/s
+            vmax     = sqrt(G * m100*MSUN*fNFW(rmax/(rs*KPC))/fNFW(c100) / rmax) # in cm/s
             rmax_new = 2**R_MU * mleft100**R_ETA / (1+mleft100)**R_MU * rmax # in cm
             vmax_new = 2**V_MU * mleft100**V_ETA / (1+mleft100)**V_MU * vmax # in cm/s
             rs_new   = rmax_new/(sqrt(7.)-2.)  # in cm
@@ -191,7 +189,7 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
 
     else:
 
-        print 'menc for density profile',profile,'not implemented... aborting.'
+        print('menc for density profile',profile,'not implemented... aborting.')
         exit()
 
 
@@ -231,9 +229,13 @@ def Reff(m200,profile,cK=5.,mleft=1,zin=0.,sigmaSI=None,mcore_thres=None,nostrip
         if   smhm=='m13':
             mstar = moster13(m200,z=zin) #exp(mstarM13(log(m200)))
         if smhm=='m13+1sig':
-            mstar = moster13(m200,z=zin)*10.
+            mstar = moster13(m200,z=zin) * 10**0.15
         if smhm=='m13-1sig':
-            mstar = moster13(m200,z=zin)/10.
+            mstar = moster13(m200,z=zin) * 10**-0.15
+        elif smhm=='m13+1sigGK17':  # 2.730e11 MSUN pivot mass from GK17's Mvir 1e11.5 to our M200
+            mstar = moster13(m200,z=zin) * 10**array([0.2 if mm > 2.730e11 else (0.2-0.2*(log10(mm)-log10(2.730e11))) for mm in m200])
+        elif smhm=='m13-1sigGK17':
+            mstar = moster13(m200,z=zin) * 10**-array([0.2 if mm > 2.730e11 else (0.2-0.2*(log10(mm)-log10(2.730e11))) for mm in m200])
         elif smhm=='b13':
             mstar = exp(mstarB13(log(m200)))
         elif smhm=='b14':
@@ -290,21 +292,21 @@ def mvir2sigLOS(mvir,profile,mleft=1.,cK=5.,mstar=None,zin=1.,estimator='wolf201
     """
 
     if verbose:
-        print
-        print 'PARAMETER VALUES'
-        print 'profile',profile
-        print 'mleft',mleft
-        print 'cK',cK
-        print 'mstar',mstar
-        print 'zin',zin
-        print 'sigmaSI',sigmaSI
-        print 'mcore_thres',mcore_thres
-        print 'mass estimator',estimator
-        print 'nostripRe',nostripRe
-        print 'smhm',smhm
-        print 'reff_method',reff_method
-        print 'cNFW_method',cNFW_method
-        print 'WDM?',wdm,'' if not wdm else 'mWDM',mWDM,'keV'
+        print()
+        print('PARAMETER VALUES')
+        print('profile',profile)
+        print('mleft',mleft)
+        print('cK',cK)
+        print('mstar',mstar)
+        print('zin',zin)
+        print('sigmaSI',sigmaSI)
+        print('mcore_thres',mcore_thres)
+        print('mass estimator',estimator)
+        print('nostripRe',nostripRe)
+        print('smhm',smhm)
+        print('reff_method',reff_method)
+        print('cNFW_method',cNFW_method)
+        print('WDM?',wdm,'' if not wdm else 'mWDM',mWDM,'keV')
     
 
     if Re==None:
@@ -334,8 +336,8 @@ if __name__ == '__main__':
     from vcorrect import *
 
     if len(argv) < 2:
-        print 'usage: {0} [menc1](,mod1) .. [mencN](,modN)'.format(argv[0])
-        print "   mencX and modX can be nfw, sis, hern, or point to file [mencX]-menc.dat or [modX]-mod.dat"
+        print('usage: {0} [menc1](,mod1) .. [mencN](,modN)'.format(argv[0]))
+        print("   mencX and modX can be nfw, sis, hern, or point to file [mencX]-menc.dat or [modX]-mod.dat")
         exit()
 
     profiles = argv[1:]
@@ -373,12 +375,12 @@ if __name__ == '__main__':
         mpeak = array([mvir[i,ip]      for i,ip in enumerate(ipeak)])
 
         imw,im31 = (0,1) if mvir[0,0] < mvir[1,0] else (1,0)
-        print 'Found 2 halos with mass > 1e11 MSUN, paired sim ( mass of first 3 halos: MW',mvir[imw,0],'M31',mvir[im31,0],'3rd',mvir[2,0],').'
+        print('Found 2 halos with mass > 1e11 MSUN, paired sim ( mass of first 3 halos: MW',mvir[imw,0],'M31',mvir[im31,0],'3rd',mvir[2,0],').')
         m31_pos = array([x[im31,0],y[im31,0],z[im31,0]])
         isubs0 = 2
 
         nsubhalos = len(x[isubs0:])
-        print 'Found a total of',nsubhalos,'subhalos,',
+        print('Found a total of',nsubhalos,'subhalos,',end='')
 
         # center present day positions on the Milky Way (2nd most massive halo)
         x0 = (x[:,0] - x[imw,0])*1000 # convert to kpc
@@ -386,8 +388,8 @@ if __name__ == '__main__':
         z0 = (z[:,0] - z[imw,0])*1000
         gcdist = sqrt( x0**2 + y0**2 + z0**2 ) # dist. from most massive halo
         inMW = gcdist < RVIR
-        print sum(gcdist < RVIR),'of which are in the MW virial volume'
-        print len(vmax[inMW][::10]),'points should be plotted'
+        print(sum(gcdist < RVIR),'of which are in the MW virial volume')
+        print(len(vmax[inMW][::10]),'points should be plotted')
         plt.plot(vmax[inMW][::10]/sqrt(3),mpeak[inMW][::10],'bo',alpha=0.1,markersize=3,markeredgewidth=0,label='ELVIS')
 
 
@@ -398,7 +400,7 @@ if __name__ == '__main__':
 
     # set up fraction luminous
     fnflum = '../ntot/d17-flum93.dat'
-    print '\nreading flum data from',fnflum
+    print('\nreading flum data from',fnflum)
     minfall,flum_dat = loadtxt(fnflum,unpack=True)
     flum = lambda m: interp(log(m),log(minfall),flum_dat,left=0,right=1)
 
@@ -436,4 +438,4 @@ if __name__ == '__main__':
     plt.legend(loc=2,fontsize=13)
     figfn = 'mass_vmax.pdf'
     plt.savefig(figfn)
-    print 'wrote',figfn
+    print('wrote',figfn)
