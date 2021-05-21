@@ -14,7 +14,8 @@ cosmoP13   = cosmology.setCosmology('planck13')
 cosmoP15   = cosmology.setCosmology('planck15')
 cosmoP18   = cosmology.setCosmology('planck18') # default
 
-DIR = '/Users/hgzxbprn/Documents/research/pyutils/'
+#DIR = '/Users/hgzxbprn/Documents/research/pyutils/'
+DIR = '/home/stacykim/research/pyutils/'
 
 CDM_MF = 'd17'
 WDM_MF = 'schneider'
@@ -187,9 +188,9 @@ def dutton14(m,z=0,virial=False):
 # ==============================================================================
 # ABUNDANCE MATCHING
 
-mhM13,msM13 = loadtxt(DIR+'moster.dat',unpack=True)
-mhaloM13 = interp1d(log(msM13),log(mhM13),kind='linear',fill_value='extrapolate', bounds_error=False)
-mstarM13 = interp1d(log(mhM13),log(msM13),kind='linear',fill_value='extrapolate', bounds_error=False)
+#mhM13,msM13 = loadtxt(DIR+'moster.dat',unpack=True)
+#mhaloM13 = interp1d(log(msM13),log(mhM13),kind='linear',fill_value='extrapolate', bounds_error=False)
+#mstarM13 = interp1d(log(mhM13),log(msM13),kind='linear',fill_value='extrapolate', bounds_error=False)
 
 # Moster+ 2013's redshift-dependent SMHM relation (all in MSUN units)
 M10_M13 = 11.590  # +- 0.236
