@@ -7,7 +7,7 @@ from numpy.random import normal
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize_scalar
 from scipy.integrate import quad
-from genutils import *
+#from genutils import *
 
 RDIST_DATDIR = '/Users/hgzxbprn/Documents/research/projects/msp/semianalytics/'
 
@@ -287,12 +287,9 @@ def correct(profiles):
         if maglim == 'DES' :  C_OMEGA = AREA_DES  / AREA_DR8
         if maglim == 'LSST':  C_OMEGA = AREA_LSST / AREA_DR8
 
-        print('C_OMEGA',C_OMEGA)
-
         for ird,name in enumerate(rdist_names):
             crs = [crs_tot[iml][i][ird] for i in range(len(crs_tot[0]))]
             print(name+':',int(round(sum(crs)*C_OMEGA,2)),'total satellites (not including classicals)') # + NCLASSICAL
-
 
     return crs_tot, menc_fxns, rdist_names # crs_tot[maglims][dwarfs][profiles]
 
@@ -323,13 +320,13 @@ def vcorrect(profiles,bootstrap=True,nboot=1000,obs_uncertainty=None):
 
     for dwarf_name,dwarf in dwarfs.items():
 
-        if dwarf['sigma'] == None: continue
-
         if dwarf['type'] == 'classical':
             nsigmas = ones(nprofiles)
         else:
             id += 1
+            if dwarf['sigma'] == None: continue
             nsigmas = array(crs_tot[0][id])*(AREA_SKY/AREA_DR8) # for all profiles, full volume + full sky correction
+
 
         if not bootstrap:
             for ip in range(nprofiles): sigmas[ip] += [ [dwarf['sigma']]*int(round(nsigmas[ip])) ]

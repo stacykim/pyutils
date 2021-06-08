@@ -3,6 +3,7 @@
 
 from sys import *
 from numpy import *
+from numpy.random import normal
 import matplotlib as mpl
 #mpl.rcParams['text.usetex'] = True
 #mpl.rcParams['font.family'] = 'serif'
@@ -16,7 +17,7 @@ from genutils import *  # NFW definitions imported from here
 
 
 # includes tidal stripping using Penarrubia+ 2010's method. does not include stellar mass (mstar used to calculate Re if needed).
-def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,reff='r17',nostripRe=False,cNFW_method='d15',
+def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,reff='r17',Re0=None,nostripRe=False,cNFW_method='d15',c200=None,
          mcore_thres=None,tSF=None, wdm=False,mWDM=5., sigmaSI=None,fudge=1.3,stretch=0):
     """
     Some of the input parameters:
@@ -33,14 +34,16 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
     mWDM      = mass of WDM particle, in keV; need to specify wdm=True if want wdm
     """
     
-    hz = h(zin,method=cNFW_method)
+    h0 = h(0,method=cNFW_method)
 
     # assume everything given in M200c units, and switch to M100c, which is system P10 worked in
-    c200 = cNFW(m200,z=zin,virial=False,method=cNFW_method,wdm=wdm,mWDM=mWDM)
+    if (not hasattr(c200,'__iter__')) and c200==None:
+        c200 = cNFW(m200,z=zin,virial=False,method=cNFW_method,wdm=wdm,mWDM=mWDM)
+
     rs,r200 = nfw_r(m200,c200,z=zin,cNFW_method=cNFW_method)  # rs doesn't change with halo def
 
-    m100_div_h, r100_div_h, c100 = changeMassDefinition(m200/hz, c200, zin, '200c', '100c')
-    m100,r100 = m100_div_h * hz, r100_div_h * hz
+    m100_div_h, r100_div_h, c100 = changeMassDefinition(m200/h0, c200, zin, '200c', '100c')
+    m100,r100 = m100_div_h * h0, r100_div_h * h0
 
     # switch from mleft200 to mleft100
     while (not hasattr(mleft100,'__iter__')) and mleft100 == None:
@@ -55,10 +58,17 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
             break
 
         # else solve for corresponding mleft100
-        f = lambda ml100,mm,rr: menc(rr,mm,profile,mleft100=ml100,zin=zin,sigmaSI=sigmaSI,fudge=fudge,stretch=stretch,mcore_thres=mcore_thres,cNFW_method=cNFW_method,wdm=wdm,mWDM=mWDM)/mm - mleft
+        f = lambda ml100,mm,rr: menc(rr,mm,profile,mleft100=ml100,zin=zin,sigmaSI=sigmaSI,fudge=fudge,stretch=stretch,mcore_thres=mcore_thres,cNFW_method=cNFW_method,c200=c200,wdm=wdm,mWDM=mWDM)/mm - mleft
         if (hasattr(mleft,'__iter__') and len(mleft) > 1) or (hasattr(m200,'__iter__') and len(m200) > 1):  # solve for multiple subs at once
             x0 = mleft if (hasattr(mleft,'__iter__') and len(mleft) > 1) else mleft*ones(len(m200))
-            mleft100 = array([ root(f,x0=xx0,args=(mm200,rr200)).x[0] for rr200,mm200,xx0 in zip(r200,m200,x0) ])
+            try:
+                mleft100 = array([ root(f,x0=xx0,args=(mm200,rr200)).x[0] for rr200,mm200,xx0 in zip(r200,m200,x0) ])
+            except:
+                print('r200',r200)
+                print('m200',m200)
+                print('x0',x0)
+                exit()
+            
             mleft100[mleft100 > 0.9] = 1.
         else:
             mleft100 = root(f,x0=mleft,args=(m200,r200)).x[0]
@@ -96,11 +106,12 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
 
         if  tSF==None: tSF = tin
         tSF *= GYR
-        tDYN = 2*pi*sqrt((rs*KPC)**3/G/(menc(rs,m200,'nfw',mleft=1,zin=zin,cNFW_method=cNFW_method,wdm=wdm,mWDM=mWDM)*MSUN))
+        tDYN = 2*pi*sqrt((rs*KPC)**3/G/(menc(rs,m200,'nfw',mleft=1,zin=zin,cNFW_method=cNFW_method,c200=c200,wdm=wdm,mWDM=mWDM)*MSUN))
         q = KAPPA * tSF / tDYN
         n = fCORENFW(q)
 
-        Re0 = Reff(m200,'coreNFW',mleft=1.,zin=zin,mcore_thres=mcore_thres,nostripRe=nostripRe,smhm=smhm,mstar=mstar,reff=reff,cNFW_method=cNFW_method,wdm=wdm,mWDM=mWDM)  # inital 2D half-light radius, in kpc
+        if (not hasattr(Re0,'__iter__')) and Re0==None:
+            Re0 = Reff(m200,'coreNFW',mleft=1.,zin=zin,mcore_thres=mcore_thres,nostripRe=nostripRe,smhm=smhm,mstar=mstar,reff=reff,cNFW_method=cNFW_method,c200=c200,wdm=wdm,mWDM=mWDM)  # inital 2D half-light radius, in kpc
         Rc = ETA * Re0  # coreNFW core radius, in kpc
 
         if not hasattr(m200,'__iter__'):
@@ -110,7 +121,7 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
         else:
             suppression = array([1. if mm < mcore_thres else fCORENFW(rrenc/rrc)**nn for mm,rrenc,rrc,nn in zip(m200,renc,Rc,n)])
 
-        return menc(renc,m200,'nfw',mleft100=mleft100,zin=zin,cNFW_method=cNFW_method,wdm=wdm,mWDM=mWDM) * suppression
+        return menc(renc,m200,'nfw',mleft100=mleft100,zin=zin,cNFW_method=cNFW_method,c200=c200,wdm=wdm,mWDM=mWDM) * suppression
 
 
     elif profile=='cored':
@@ -214,7 +225,7 @@ def delta_Reff(mleft,cK0=5.):
     return Re2Rc / Re2Rc0 * delta_Rc
 
 
-def Reff(m200,profile,cK=5.,mleft=1,zin=0.,sigmaSI=None,mcore_thres=None,nostripRe=False,smhm='m13',mstar=None,reff='r17',cNFW_method='d15',wdm=False,mWDM=5.):
+def Reff(m200,profile,cK=5.,mleft=1,zin=0.,sigmaSI=None,mcore_thres=None,reff='r17',Re0=None,nostripRe=False,smhm='m13',mstar=None,cNFW_method='d15',c200=None,wdm=False,mWDM=5.):
     """
     Assuming a King profile, returns the 2D half-light radius of a galaxy in KPC.
     Takes into account change in reff due to tidal stripping.
@@ -222,8 +233,10 @@ def Reff(m200,profile,cK=5.,mleft=1,zin=0.,sigmaSI=None,mcore_thres=None,nostrip
     All based on a Delta = 200c definition.
     """
 
-    c = cNFW(m200,z=zin,virial=False,method=cNFW_method,wdm=wdm,mWDM=mWDM)
-    rs,rvir = nfw_r(m200,c,z=zin,cNFW_method=cNFW_method)
+    if (not hasattr(c200,'__iter__')) and c200==None:
+        c200 = cNFW(m200,z=zin,virial=False,method=cNFW_method,wdm=wdm,mWDM=mWDM)
+
+    rs,rvir = nfw_r(m200,c200,z=zin,cNFW_method=cNFW_method)
 
     if (not hasattr(mstar,'__iter__')) and mstar==None:
         if   smhm=='m13':
@@ -253,40 +266,42 @@ def Reff(m200,profile,cK=5.,mleft=1,zin=0.,sigmaSI=None,mcore_thres=None,nostrip
         elif smhm=='m21-1sig':
             mstar = exp(mstarM21(log(m200))) * 10**-array([0.3 if mm > 1e10 else (0.3-0.43*(log10(mm)-10)) for mm in m200])
 
+    if (not hasattr(Re0,'__iter__')) and Re0==None:
+        if   reff=='r17': # fit to isolated dwarfs from Read+2017 and McConnachie+ 2012, taking repeats out from M12, and no Leo T
+            Re0 = 10**(0.268*log10(mstar)-2.11)
+        elif reff=='r17+1s':
+            Re0 = 10**(0.268*log10(mstar)-2.11 + 0.234)
+        elif reff=='r17-1s':
+            Re0 = 10**(0.268*log10(mstar)-2.11 - 0.234)
+        elif reff=='r17scatter':
+            Re0 = 10**(0.268*log10(mstar)-2.11 + normal(loc=0,scale=0.234,size=len(mstar)))
+        elif reff=='d18':
+            Re0 = 10**(0.23*log10(mstar)-1.93)  # 2D half-light radius from shany's 2018 paper (assumes V-band mass-to-light ratio = 2.0)
+        elif reff=='j18':
+            re = 0.02 * (c200/10.)**-0.7 * rvir  # Jiang+ 2018's galaxy re (3D half-light radius) to DM rvir scaling relation
+            Re0 = 0.75*re # 2D half-light radius; conversion factor from Wolf+ 2010
 
-    if   reff=='r17': # fit to isolated dwarfs from Read+2017 and McConnachie+ 2012, taking repeats out from M12, and no Leo T
-        Re = 10**(0.268*log10(mstar)-2.11)
-    elif reff=='r17+1s':
-        Re = 10**(0.268*log10(mstar)-2.11 + 0.234)
-    elif reff=='r17-1s':
-        Re = 10**(0.268*log10(mstar)-2.11 - 0.234)
-    elif reff=='d18':
-        Re = 10**(0.23*log10(mstar)-1.93)  # 2D half-light radius from shany's 2018 paper (assumes V-band mass-to-light ratio = 2.0)
-    elif reff=='j18':
-        re = 0.02 * (c/10.)**-0.7 * rvir  # Jiang+ 2018's galaxy re (3D half-light radius) to DM rvir scaling relation
-        Re = 0.75*re # 2D half-light radius; conversion factor from Wolf+ 2010
 
-
-    if mleft==1 or nostripRe:  return Re
+    if mleft==1 or nostripRe:  return Re0
 
     # for stripped halo, calculate change in reff via Penarrubia+ 2008 methods
     # (which only applies to ABG profiles --> base profiles for non-ABGs)
     base_profile = 'nfw' if (profile=='coreNFW' or profile=='sidm') else profile
-    Rcore      = Re/Reff_in_Rcore(cK)  # 2D core radius, in kpc
-    mcore      = menc(Rcore,m200,base_profile,mleft=1    ,zin=zin,sigmaSI=sigmaSI,mcore_thres=mcore_thres,cNFW_method=cNFW_method,wdm=wdm,mWDM=mWDM)  # 3D integral in mass, in MSUN
-    mcore_new  = menc(Rcore,m200,base_profile,mleft=mleft,zin=zin,sigmaSI=sigmaSI,mcore_thres=mcore_thres,cNFW_method=cNFW_method,wdm=wdm,mWDM=mWDM)  # 3D integral in mass, in MSUN
-    mleft_core = mcore_new / mcore
-    Re_new     = Re * delta_Reff(mleft_core)
+    Rcore  = Re0/Reff_in_Rcore(cK)  # 2D core radius, in kpc
+    mcore0 = menc(Rcore,m200,base_profile,mleft=1    ,zin=zin,Re0=Re0,sigmaSI=sigmaSI,mcore_thres=mcore_thres,cNFW_method=cNFW_method,c200=c200,wdm=wdm,mWDM=mWDM)  # 3D integral in mass, in MSUN
+    mcore  = menc(Rcore,m200,base_profile,mleft=mleft,zin=zin,Re0=Re0,sigmaSI=sigmaSI,mcore_thres=mcore_thres,cNFW_method=cNFW_method,c200=c200,wdm=wdm,mWDM=mWDM)  # 3D integral in mass, in MSUN
+    mleft_core = mcore / mcore0
+    Re     = Re0 * delta_Reff(mleft_core)
     
-    return Re_new
+    return Re
 
 
 
 # ===========================================================================
 # TRANSLATING TO VELOCITIES
 
-def mvir2sigLOS(mvir,profile,mleft=1.,cK=5.,mstar=None,zin=1.,estimator='wolf2010',reff_method='r17',Re=None,nostripRe=False,smhm='m13',cNFW_method='d15',
-                mcore_thres=None,tSF=None, wdm=False,mWDM=5., sigmaSI=None, verbose=False):
+def mvir2sigLOS(mvir,profile,mleft=1.,cK=5.,mstar=None,zin=1.,estimator='wolf2010',reff_method='r17',Re0=None,nostripRe=False,smhm='m13',
+                cNFW_method='d15',c200=None,mcore_thres=None,tSF=None, wdm=False,mWDM=5., sigmaSI=None, verbose=False):
     """
     Returns sigLOS in (km/s)**2.
     """
@@ -309,19 +324,19 @@ def mvir2sigLOS(mvir,profile,mleft=1.,cK=5.,mstar=None,zin=1.,estimator='wolf201
         print('WDM?',wdm,'' if not wdm else 'mWDM',mWDM,'keV')
     
 
-    if Re==None:
-        Re = Reff(   mvir,profile,mleft=mleft,zin=zin,sigmaSI=sigmaSI,mcore_thres=mcore_thres,nostripRe=nostripRe,smhm=smhm,mstar=mstar,reff=reff_method,cNFW_method=cNFW_method,wdm=wdm,mWDM=mWDM)  # the 2D half-light radius
+    #if not hasattr(Re0,'__iter__') and Re0==None:
+    Re = Reff(mvir,profile,mleft=mleft,zin=zin,sigmaSI=sigmaSI,mcore_thres=mcore_thres,nostripRe=nostripRe,smhm=smhm,mstar=mstar,Re0=Re0,reff=reff_method,cNFW_method=cNFW_method,c200=c200,wdm=wdm,mWDM=mWDM)  # the 2D half-light radius
 
     if estimator=='wolf2010':
 
         re = Re/0.75  # the 3D half-light radius; conversion factor from Wolf+ 2010
-        mh = menc(re,mvir,profile,mleft=mleft,zin=zin,sigmaSI=sigmaSI,mcore_thres=mcore_thres,tSF=tSF,cNFW_method=cNFW_method,wdm=wdm,mWDM=mWDM)  # mass w/in the 3D half-light radius
+        mh = menc(re,mvir,profile,mleft=mleft,zin=zin,sigmaSI=sigmaSI,Re0=Re0,mcore_thres=mcore_thres,tSF=tSF,cNFW_method=cNFW_method,c200=c200,wdm=wdm,mWDM=mWDM)  # mass w/in the 3D half-light radius
         if hasattr(mstar,'__iter__') or mstar != None:  mh += mstar/2.  # assume half stellar mass w/in Reff. Should adjust amount added w/tidal stripping?
         sigLOS2 = G/4*(mh*MSUN)/(Re*KPC) / KMS**2
 
     if estimator == 'errani2018':
 
-        m_est = menc(1.8*Re,mvir,profile,mleft=mleft,zin=zin,sigmaSI=sigmaSI,mcore_thres=mcore_thres,tSF=tSF,cNFW_method=cNFW_method,wdm=wdm,mWDM=mWDM)  # mass w/in 1.8 * 2D half-light radius
+        m_est = menc(1.8*Re,mvir,profile,mleft=mleft,zin=zin,sigmaSI=sigmaSI,Re0=Re0,mcore_thres=mcore_thres,tSF=tSF,cNFW_method=cNFW_method,c200=c200,wdm=wdm,mWDM=mWDM)  # mass w/in 1.8 * 2D half-light radius
         if hasattr(mstar,'__iter__') or mstar != None:  m_est += mstar/2.  # assume half stellar mass w/in Reff. Should adjust amount added w/tidal stripping?
         sigLOS2 = G/3.5*(m_est*MSUN)/(1.8*Re*KPC) / KMS**2
     
