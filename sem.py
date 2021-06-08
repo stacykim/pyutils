@@ -160,10 +160,10 @@ def accreted_stars(halo, vthres=26., zre=4., binning='3bins', plot_mergers=False
                 izzre = where(zz_sub<zre)[0][0]
                 insert(zz_sub, izzre, zre)
                 insert(tt_sub, izzre, interp(zre,z,t))
-            #vv_sub = interp(tt_sub, tv, fv)
-            vv_sub = interp(tt_sub, t_sub[::-1], vmax_sub[::-1])
+            vv_sub = interp(tt_sub, tv, fv)
+            #vv_sub = interp(tt_sub, t_sub[::-1], vmax_sub[::-1]) # for some reason no smoothing was selected - 2020.01.15
 
-        vv_sub = array([ max(vv_sub[:i+1]) for i in range(len(vv_sub)) ])  # vmaxes fall before infall, so use max vmax (after smoothing)
+        #vv_sub = array([ max(vv_sub[:i+1]) for i in range(len(vv_sub)) ])  # vmaxes fall before infall, so use max vmax (after smoothing)
         dt_sub = array([timestep]) if len(tt_sub)==1 else tt_sub[1:]-tt_sub[:-1] # len(dt_sub) = len(tt_sub)-1
         
         if binning != 'scatter':
