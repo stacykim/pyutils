@@ -58,17 +58,10 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
             break
 
         # else solve for corresponding mleft100
-        f = lambda ml100,mm,rr: menc(rr,mm,profile,mleft100=ml100,zin=zin,sigmaSI=sigmaSI,fudge=fudge,stretch=stretch,mcore_thres=mcore_thres,cNFW_method=cNFW_method,c200=c200,wdm=wdm,mWDM=mWDM)/mm - mleft
+        f = lambda ml100,mm,rr,cc: menc(rr,mm,profile,mleft100=ml100,zin=zin,sigmaSI=sigmaSI,fudge=fudge,stretch=stretch,mcore_thres=mcore_thres,cNFW_method=cNFW_method,c200=cc,wdm=wdm,mWDM=mWDM)/mm - mleft
         if (hasattr(mleft,'__iter__') and len(mleft) > 1) or (hasattr(m200,'__iter__') and len(m200) > 1):  # solve for multiple subs at once
             x0 = mleft if (hasattr(mleft,'__iter__') and len(mleft) > 1) else mleft*ones(len(m200))
-            try:
-                mleft100 = array([ root(f,x0=xx0,args=(mm200,rr200)).x[0] for rr200,mm200,xx0 in zip(r200,m200,x0) ])
-            except:
-                print('r200',r200)
-                print('m200',m200)
-                print('x0',x0)
-                exit()
-            
+            mleft100 = array([ root(f,x0=xx0,args=(mm200,rr200,cc200)).x[0] for rr200,mm200,cc200,xx0 in zip(r200,m200,c200,x0) ])
             mleft100[mleft100 > 0.9] = 1.
         else:
             mleft100 = root(f,x0=mleft,args=(m200,r200)).x[0]

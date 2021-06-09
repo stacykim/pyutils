@@ -14,8 +14,8 @@ cosmoP13   = cosmology.setCosmology('planck13')
 cosmoP15   = cosmology.setCosmology('planck15')
 cosmoP18   = cosmology.setCosmology('planck18') # default
 
-#DIR = '/Users/hgzxbprn/Documents/research/pyutils/'
-DIR = '/home/stacykim/research/pyutils/'
+DIR = '/Users/hgzxbprn/Documents/research/pyutils/'
+#DIR = '/home/stacykim/research/pyutils/'
 
 CDM_MF = 'd17'
 WDM_MF = 'schneider'
