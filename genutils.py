@@ -5,6 +5,13 @@ from numpy import *
 from scipy.interpolate import interp1d
 from scipy.optimize import brentq
 
+import os
+hostname = os.uname()[1]
+if hostname == 'CLWS00081':
+    DIR = '/home/stacykim/research/pyutils/'
+else:
+    DIR = '/Users/hgzxbprn/Documents/research/pyutils/'
+
 from colossus.cosmology import cosmology
 from colossus.halo.mass_defs import changeMassDefinition
 from colossus.halo.concentration import concentration as colossus_cNFW
@@ -14,8 +21,6 @@ cosmoP13   = cosmology.setCosmology('planck13')
 cosmoP15   = cosmology.setCosmology('planck15')
 cosmoP18   = cosmology.setCosmology('planck18') # default
 
-DIR = '/Users/hgzxbprn/Documents/research/pyutils/'
-#DIR = '/home/stacykim/research/pyutils/'
 
 CDM_MF = 'd17'
 WDM_MF = 'schneider'
