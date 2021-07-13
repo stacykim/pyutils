@@ -77,7 +77,8 @@ def omega_m(z,method='d15'):
 # MASS PROFILE FUNCTIONS
 # for all the routines that follow, masses are in units of MSUN
 
-def nfw_r(mass,c,delta=200.,z=0,cNFW_method='d15'):
+def nfw_r(mass,c=None,delta=200.,z=0,cNFW_method='d15'):
+    if (not hasattr(c,'__iter__')) and c==None:  c = cNFW(mass,z=z,massdef=str(int(delta))+'c',method=cNFW_method)
     rvir3 = mass*MSUN / (4*pi/3*delta*rhoc(z,method=cNFW_method))
     rvir  = rvir3**(1/3.)
     rs    = rvir/c

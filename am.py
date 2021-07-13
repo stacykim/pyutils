@@ -19,7 +19,7 @@ def duffy08(m):  return A_DUFFY*(m/MPIVOT)**B_DUFFY
 
 
 if len(argv) != 2:
-    print 'usage: {0} [mstar]'.format(argv[0])
+    print('usage: {0} [mstar]'.format(argv[0]))
     exit()
 
 mstar = float(argv[1])
@@ -51,11 +51,11 @@ b13 = interp1d(log(mstarB13),log(mhaloB13),kind='linear',fill_value='extrapolate
 
 mstar_segI = 340*2. # V-band luminosity x (M/L = 2)
 
-#print exp(m13(log(mstar_segI))),exp(b14(log(mstar_segI)))
-print 'halo mass according to...'
-print 'moster+ 2013  :  '+('{0:.2e}'.format( exp(m13(log(mstar))) ))+' MSUN'
-print 'brook+  2014  :  '+('{0:.2e}'.format( exp(b14(log(mstar))) ))+' MSUN'
-print 'behroozi+ 2013:  '+('{0:.2e}'.format( exp(b13(log(mstar))) ))+' MSUN'
+#print(exp(m13(log(mstar_segI))),exp(b14(log(mstar_segI))))
+print('halo mass according to...')
+print('moster+ 2013  :  '+('{0:.2e}'.format( exp(m13(log(mstar))) ))+' MSUN')
+print('brook+  2014  :  '+('{0:.2e}'.format( exp(b14(log(mstar))) ))+' MSUN')
+print('behroozi+ 2013:  '+('{0:.2e}'.format( exp(b13(log(mstar))) ))+' MSUN')
 
 
 
@@ -76,4 +76,4 @@ if CHECK_EXTRAP:
     plt.xlabel('Mhalo/MSUN')
     figfn = 'am.pdf'
     plt.savefig(figfn)
-    print 'wrote',figfn
+    print('wrote',figfn)
