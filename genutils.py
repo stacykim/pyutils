@@ -118,17 +118,17 @@ def cNFW(m,z=0,virial=False,method='d15', wdm=False,mWDM=5.,massdef=None):
     elif method=='d15': # Diemer & Joyce 2019
         cosmology.setCurrent(cosmoP18)
         #cosmology.setCurrent(cosmoWMAP5)
-        c = colossus_cNFW(m/h0, massdef, z, model='diemer15')
+        c = colossus_cNFW(m/h0, massdef, z, model='diemer19')
 
     elif method=='d15+1s': # Diemer & Joyce 2019
         cosmology.setCurrent(cosmoP18)
-        c = colossus_cNFW(m/h0, massdef, z, model='diemer15') * 10**0.16
+        c = colossus_cNFW(m/h0, massdef, z, model='diemer19') * 10**0.16
     elif method=='d15-1s': # Diemer & Joyce 2019
         cosmology.setCurrent(cosmoP18)
-        c = colossus_cNFW(m/h0, massdef, z, model='diemer15') / 10**0.16
+        c = colossus_cNFW(m/h0, massdef, z, model='diemer19') / 10**0.16
     elif method=='d15-wmap':
         cosmology.setCurrent(cosmoWMAP5)
-        c = colossus_cNFW(m/h0, massdef, z, model='diemer15')
+        c = colossus_cNFW(m/h0, massdef, z, model='diemer19')
 
     else:
         print('did not recognize given mass-concentration relation',relation,'!  Aborting...')
