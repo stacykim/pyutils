@@ -7,9 +7,13 @@ from numpy.random import normal
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize_scalar
 from scipy.integrate import quad
-from genutils import *
 
-RDIST_DATDIR = '/Users/hgzxbprn/Documents/research/projects/msp/semianalytics/'
+import os
+hostname = os.uname()[1]
+if hostname == 'CLWS00081':
+    RDIST_DATDIR = '/home/stacykim/research/pyutils/radial_distributions/'
+else:
+    RDIST_DATDIR = '/Users/hgzxbprn/Documents/research/pyutils/radial_distributions/' # '/projects/msp/semianalytics/'
 
 
 # for instances where radial and angular are separable
@@ -208,7 +212,7 @@ def correct(profiles):
             rdist_names += ['Einasto']
         else:  # we'll try to read menc profile from a data file
 
-            datfn = RDIST_DATDIR+'nenc3d/'+base+'-menc.dat'
+            datfn = RDIST_DATDIR+base+'-menc.dat'
 
             if 'tidal' not in base:
                 rr,mm = loadtxt(datfn,unpack=True)
@@ -236,7 +240,7 @@ def correct(profiles):
 
         # read in modification to profile, if provided
         if mod != None:
-            datfn = RDIST_DATDIR+'nenc3d/'+mod+'-mod.dat'
+            datfn = RDIST_DATDIR+mod+'-mod.dat'
             print('reading modification from',datfn)
             rr,mm = loadtxt(datfn,unpack=True)
             rr *= 300 if rr[-1]/100 < 1 else 1
@@ -287,12 +291,9 @@ def correct(profiles):
         if maglim == 'DES' :  C_OMEGA = AREA_DES  / AREA_DR8
         if maglim == 'LSST':  C_OMEGA = AREA_LSST / AREA_DR8
 
-        print('C_OMEGA',C_OMEGA)
-
         for ird,name in enumerate(rdist_names):
             crs = [crs_tot[iml][i][ird] for i in range(len(crs_tot[0]))]
             print(name+':',int(round(sum(crs)*C_OMEGA,2)),'total satellites (not including classicals)') # + NCLASSICAL
-
 
     return crs_tot, menc_fxns, rdist_names # crs_tot[maglims][dwarfs][profiles]
 
@@ -323,13 +324,13 @@ def vcorrect(profiles,bootstrap=True,nboot=1000,obs_uncertainty=None):
 
     for dwarf_name,dwarf in dwarfs.items():
 
-        if dwarf['sigma'] == None: continue
-
         if dwarf['type'] == 'classical':
             nsigmas = ones(nprofiles)
         else:
             id += 1
+            if dwarf['sigma'] == None: continue
             nsigmas = array(crs_tot[0][id])*(AREA_SKY/AREA_DR8) # for all profiles, full volume + full sky correction
+
 
         if not bootstrap:
             for ip in range(nprofiles): sigmas[ip] += [ [dwarf['sigma']]*int(round(nsigmas[ip])) ]

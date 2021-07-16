@@ -5,6 +5,13 @@ from numpy import *
 from scipy.interpolate import interp1d
 from scipy.optimize import brentq
 
+import os
+hostname = os.uname()[1]
+if hostname == 'CLWS00081':
+    DIR = '/home/stacykim/research/pyutils/'
+else:
+    DIR = '/Users/hgzxbprn/Documents/research/pyutils/'
+
 from colossus.cosmology import cosmology
 from colossus.halo.mass_defs import changeMassDefinition
 from colossus.halo.concentration import concentration as colossus_cNFW
@@ -14,8 +21,6 @@ cosmoP13   = cosmology.setCosmology('planck13')
 cosmoP15   = cosmology.setCosmology('planck15')
 cosmoP18   = cosmology.setCosmology('planck18') # default
 
-#DIR = '/Users/hgzxbprn/Documents/research/pyutils/'
-DIR = '/home/stacykim/research/pyutils/'
 
 CDM_MF = 'd17'
 WDM_MF = 'schneider'
@@ -77,7 +82,8 @@ def omega_m(z,method='d15'):
 # MASS PROFILE FUNCTIONS
 # for all the routines that follow, masses are in units of MSUN
 
-def nfw_r(mass,c,delta=200.,z=0,cNFW_method='d15'):
+def nfw_r(mass,c=None,delta=200.,z=0,cNFW_method='d15'):
+    if (not hasattr(c,'__iter__')) and c==None:  c = cNFW(mass,z=z,massdef=str(int(delta))+'c',method=cNFW_method)
     rvir3 = mass*MSUN / (4*pi/3*delta*rhoc(z,method=cNFW_method))
     rvir  = rvir3**(1/3.)
     rs    = rvir/c
@@ -117,17 +123,17 @@ def cNFW(m,z=0,virial=False,method='d15', wdm=False,mWDM=5.,massdef=None):
     elif method=='d15': # Diemer & Joyce 2019
         cosmology.setCurrent(cosmoP18)
         #cosmology.setCurrent(cosmoWMAP5)
-        c = colossus_cNFW(m/h0, massdef, z, model='diemer15')
+        c = colossus_cNFW(m/h0, massdef, z, model='diemer19')
 
     elif method=='d15+1s': # Diemer & Joyce 2019
         cosmology.setCurrent(cosmoP18)
-        c = colossus_cNFW(m/h0, massdef, z, model='diemer15') * 10**0.16
+        c = colossus_cNFW(m/h0, massdef, z, model='diemer19') * 10**0.16
     elif method=='d15-1s': # Diemer & Joyce 2019
         cosmology.setCurrent(cosmoP18)
-        c = colossus_cNFW(m/h0, massdef, z, model='diemer15') / 10**0.16
+        c = colossus_cNFW(m/h0, massdef, z, model='diemer19') / 10**0.16
     elif method=='d15-wmap':
         cosmology.setCurrent(cosmoWMAP5)
-        c = colossus_cNFW(m/h0, massdef, z, model='diemer15')
+        c = colossus_cNFW(m/h0, massdef, z, model='diemer19')
 
     else:
         print('did not recognize given mass-concentration relation',relation,'!  Aborting...')
