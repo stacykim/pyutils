@@ -9,7 +9,9 @@ path = '/vol/ph/astro_data/shared/morkney/EDGE/tangos'
 
 def Tangos_load(sim, redshift):
 
-  global path
+  #global path
+  if '383' in sim:  path = '/vol/ph/astro_data/shared/etaylor/CHIMERA'
+  else:             path = '/vol/ph/astro_data/shared/morkney/EDGE/tangos'
 
   print('Loading %s at z=%.2f' % (sim, redshift))
 
