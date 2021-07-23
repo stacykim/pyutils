@@ -56,7 +56,7 @@ def sfh(t, dt, z, vmax, vthres=26., zre=4.,binning='3bins',pre_method='fiducial'
         if t[ire]-t[0]==0:
             vavg_pre = vmax[ire]
         else:
-            vavg_pre = sum(vmax[:ire]*dt[:ire])/(t[ire]-t[0]) #mean([ vv for vv,zz in zip(vmax,z) if zz > zre ])        
+            vavg_pre = sum(vmax[:ire]*dt[:ire])/(t[ire]-t[0]) #mean([ vv for vv,zz in zip(vmax,z) if zz > zre ])
     
     if   binning == 'all':
         return array([ sfr_pre(vv,method=pre_method) if zz > zre else sfr_post(vv,method=post_method) for vv,zz in zip(vmax,z) ] )
@@ -67,7 +67,7 @@ def sfh(t, dt, z, vmax, vthres=26., zre=4.,binning='3bins',pre_method='fiducial'
     elif binning == 'scatter':
         #pre_scatter = 10**normal(0,0.4)
         #return array([ sfr_pre(vavg_pre,method=pre_method) * pre_scatter if zz > zre else sfr_post(vv,method=post_method) * 10**normal(0,0.3) for vv,zz in zip(vmax,z) ])
-        return array([ sfr_pre(vavg_pre,method=pre_method) * 10**normal(0,0.4) if zz > zre else sfr_post(vv,method=post_method) * 10**normal(0,0.3) for vv,zz in zip(vmax,z) ])
+        return array([ (sfr_pre(vavg_pre,method=pre_method) * 10**normal(0,0.4)) if zz > zre else ((sfr_post(vv,method=post_method) if vv > vthres else 0) * 10**normal(0,0.3)) for vv,zz in zip(vmax,z) ])
 
 
 ##################################################
