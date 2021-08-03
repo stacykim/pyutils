@@ -37,7 +37,7 @@ def sfr_post(vmax,method='schechter'):
     elif method == 'linear'     :  return 10**( 5.48*log10(vmax) - 11.9 )  # linear fit w/MW dwarfs
 
 
-def sfh(t, dt, z, vmax, vthres=26., zre=4.,binning='3bins',pre_method='fiducial',post_method='schechter'):
+def sfh(t, dt, z, vmax, vthres=26., zre=4.,binning='3bins',pre_method='fiducial',post_method='schechter',scatter=False):
     """
     Assumes we are given a halo's entire vmax trajectory.
     Data must be given s.t. time t increases and starts at t=0.
@@ -47,7 +47,8 @@ def sfh(t, dt, z, vmax, vthres=26., zre=4.,binning='3bins',pre_method='fiducial'
        'all' sim points
        '2bins' pre/post reion, with pre-SFR from <vmax(z>zre)>, post-SFR from vmax(z=0)
        '3bins' which adds SFR = 0 phase after reion while vmax < vthres
-       'scatter' which, assuming a lognormal scatter, samples the SFR randomly at each t
+
+    Setting scatter==True adds a lognormal scatter to SFRs
     """
     if z[0] < zre: vavg_pre = 0.
     else:
@@ -59,21 +60,25 @@ def sfh(t, dt, z, vmax, vthres=26., zre=4.,binning='3bins',pre_method='fiducial'
             vavg_pre = sum(vmax[:ire]*dt[:ire])/(t[ire]-t[0]) #mean([ vv for vv,zz in zip(vmax,z) if zz > zre ])
     
     if   binning == 'all':
-        return array([ sfr_pre(vv,method=pre_method) if zz > zre else sfr_post(vv,method=post_method) for vv,zz in zip(vmax,z) ] )
+        sfrs = array([ sfr_pre(vv,method=pre_method)       if zz > zre else (sfr_post(vv,method=post_method) if vv > vthres else 0) for vv,zz in zip(vmax,z) ] )
     elif binning == '2bins':
-        return array([ sfr_pre(vavg_pre,method=pre_method) if zz > zre else sfr_post(vmax[-1],method=post_method) for vv,zz in zip(vmax,z) ])
+        sfrs = array([ sfr_pre(vavg_pre,method=pre_method) if zz > zre else sfr_post(vmax[-1],method=post_method) for vv,zz in zip(vmax,z) ])
     elif binning == '3bins':
-        return array([ sfr_pre(vavg_pre,method=pre_method) if zz > zre else (sfr_post(vmax[-1],method=post_method) if vv > vthres else 0) for vv,zz in zip(vmax,z) ])
-    elif binning == 'scatter':
-        #pre_scatter = 10**normal(0,0.4)
-        #return array([ sfr_pre(vavg_pre,method=pre_method) * pre_scatter if zz > zre else sfr_post(vv,method=post_method) * 10**normal(0,0.3) for vv,zz in zip(vmax,z) ])
-        return array([ (sfr_pre(vavg_pre,method=pre_method) * 10**normal(0,0.4)) if zz > zre else ((sfr_post(vv,method=post_method) if vv > vthres else 0) * 10**normal(0,0.3)) for vv,zz in zip(vmax,z) ])
+        sfrs = array([ sfr_pre(vavg_pre,method=pre_method) if zz > zre else (sfr_post(vmax[-1],method=post_method) if vv > vthres else 0) for vv,zz in zip(vmax,z) ])
+    else:
+        print('SFR binning method',binning,'unrecognized!  Aborting...')
+        exit()
+
+    if not scatter: return sfrs
+    else:
+        return array([ sfr * 10**normal(0,0.4 if zz > zre else 0.3) for sfr,zz in zip(sfrs,z) ])
 
 
+    
 ##################################################
 # ACCRETED STARS
 
-def accreted_stars(halo, vthres=26., zre=4., binning='3bins', plot_mergers=False, timestep=0.250, verbose=False, nscatter=10, pre_method='fiducial',post_method='schechter'):
+def accreted_stars(halo, vthres=26., zre=4., binning='3bins', plot_mergers=False, timestep=0.250, verbose=False, nscatter=0, pre_method='fiducial',post_method='schechter'):
     """
     Returns redshift, major/minor mass ratio, halo objects, and stellar mass accreted 
     for each of the given halo's mergers.  Does not compute the stellar contribution
@@ -91,7 +96,7 @@ def accreted_stars(halo, vthres=26., zre=4., binning='3bins', plot_mergers=False
         plt.plot(t,vmax,color='k')
   
     zmerge, qmerge, hmerge = get_mergers_of_major_progenitor(halo)
-    msmerge = zeros(len(zmerge)) if binning != 'scatter' else zeros((len(zmerge),nscatter))
+    msmerge = zeros(len(zmerge)) if nscatter == 0 else zeros((len(zmerge),nscatter))
   
     # record main branch components
     halos = {}
@@ -166,15 +171,15 @@ def accreted_stars(halo, vthres=26., zre=4., binning='3bins', plot_mergers=False
         #vv_sub = array([ max(vv_sub[:i+1]) for i in range(len(vv_sub)) ])  # vmaxes fall before infall, so use max vmax (after smoothing)
         dt_sub = array([timestep]) if len(tt_sub)==1 else tt_sub[1:]-tt_sub[:-1] # len(dt_sub) = len(tt_sub)-1
         
-        if binning != 'scatter':
-            sfh_binned_sub = sfh(tt_sub,dt_sub,zz_sub,vv_sub,vthres=vthres,zre=zre,binning=binning,pre_method=pre_method,post_method=post_method)
+        if nscatter == 0:
+            sfh_binned_sub = sfh(tt_sub,dt_sub,zz_sub,vv_sub,vthres=vthres,zre=zre,binning=binning,pre_method=pre_method,post_method=post_method,scatter=False)
             mstar_binned_sub = array( [0] + [ sum(sfh_binned_sub[:i+1] * 1e9*dt_sub[:i+1]) for i in range(len(dt_sub)) ] ) # sfh_binned_sub
             msmerge[im] = mstar_binned_sub[-1]
             #mstar_main = interp(zmerge[im],zz[::-1],mstar_binned[::-1])
             #print('merger',im,'at z = {0:4.2f}'.format(zmerge[im]),'with {0:5.1e}'.format(mstar_binned_merge[im]),'msun stars vs {0:5.1e}'.format(mstar_main),'msun MAIN =',int(100.*mstar_binned_merge[im]/mstar_main),'%')
         else:
             for iis in range(nscatter):
-                sfh_binned_sub = sfh(tt_sub,dt_sub,zz_sub,vv_sub,vthres=vthres,zre=zre,binning='scatter',pre_method=pre_method,post_method=post_method)
+                sfh_binned_sub = sfh(tt_sub,dt_sub,zz_sub,vv_sub,vthres=vthres,zre=zre,binning=binning,scatter=True,pre_method=pre_method,post_method=post_method)
                 mstar_binned_sub = array( [0] + [ sum(sfh_binned_sub[:i+1] * 1e9*dt_sub[:i+1]) for i in range(len(dt_sub)) ] ) # sfh_binned_sub
                 msmerge[im,iis] = mstar_binned_sub[-1]
 
