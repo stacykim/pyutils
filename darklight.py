@@ -10,9 +10,7 @@ import scipy.ndimage.filters as filters
 
 from tangos.examples.mergers import *
 
-from colossus.cosmology import cosmology
-from colossus.utils.constants import G
-cosmo = cosmology.setCosmology('planck18')
+G   = 4.30092e-6  # kpc km^2 / MSUN / s^2
 
 
 
@@ -37,7 +35,7 @@ def sfr_post(vmax,method='schechter'):
     elif method == 'linear'     :  return 10**( 5.48*log10(vmax) - 11.9 )  # linear fit w/MW dwarfs
 
 
-def sfh(t, dt, z, vmax, vthres=26., zre=4.,binning='3bins',pre_method='fiducial',post_method='schechter',scatter=False):
+def sfh(t, dt, z, vmax, vthres=26.3, zre=4.,binning='3bins',pre_method='fiducial',post_method='schechter',scatter=False):
     """
     Assumes we are given a halo's entire vmax trajectory.
     Data must be given s.t. time t increases and starts at t=0.
@@ -58,7 +56,6 @@ def sfh(t, dt, z, vmax, vthres=26., zre=4.,binning='3bins',pre_method='fiducial'
             vavg_pre = vmax[ire]
         else:
             vavg_pre = sum(vmax[:ire]*dt[:ire])/(t[ire]-t[0]) #mean([ vv for vv,zz in zip(vmax,z) if zz > zre ])
-    
     if   binning == 'all':
         sfrs = array([ sfr_pre(vv,method=pre_method)       if zz > zre else (sfr_post(vv,method=post_method) if vv > vthres else 0) for vv,zz in zip(vmax,z) ] )
     elif binning == '2bins':
@@ -110,6 +107,7 @@ def accreted_stars(halo, vthres=26., zre=4., binning='3bins', plot_mergers=False
     for ii,im in enumerate(range(len(zmerge))):
         t_sub,z_sub,rbins_sub,mencDM_sub = hmerge[im][1].calculate_for_progenitors('t()','z()','rbins_profile','dm_mass_profile')
         vmax_sub = array([ max(sqrt(G*mm/rr)) for mm,rr in zip(mencDM_sub,rbins_sub) ])
+        tre = interp(zre, z_sub, t_sub)
         
         if len(t_sub)==0: continue  # skip if no mass profile data
 
@@ -140,7 +138,7 @@ def accreted_stars(halo, vthres=26., zre=4., binning='3bins', plot_mergers=False
             if z_sub[0] < zre:
                 ire = where(z>=zre)[0][0]
                 zz_sub = concatenate([z_sub[:ire],[zre],z_sub[ire:]])[::-1]
-                tt_sub = concatenate([t_sub[:ire],[cosmo.age(zre)],t_sub[ire:]])[::-1]
+                tt_sub = concatenate([t_sub[:ire],[tre],t_sub[ire:]])[::-1]
                 vv_sub = interp(tt, tv, fv) #concatenate([vmax_sub[:ire],[interp(zre,z_sub,vmax_sub)],vmax_sub[ire:]])[::-1] # interp in z, which approx vmax evol better
             else:
                 zz_sub,tt_sub,vv_sub = z_sub[::-1],t_sub[::-1],interp(tt, tv, fv) #vmax_sub[::-1]
