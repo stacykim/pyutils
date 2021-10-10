@@ -101,7 +101,7 @@ def nfw_vmax(m,z=0,cNFW_method='d15',wdm=False,mWDM=5.):
 # =============================================================================================
 # MASS-CONCENTRATION RELATIONS
 
-def cNFW(m,z=0,virial=False,method='d15', wdm=False,mWDM=5.,massdef=None):
+def cNFW(m,z=0,virial=False,massdef=None,method='d15', wdm=False,mWDM=5., kcut=50,ncut=5.0):
     """
     Returns the NFW concentration, calculated according to the given mass concentration relation 'method'.
     Written to use the versions from COLOSSUS by Diemer+ 2017, but can use versions I coded up by uncommenting them.
@@ -135,6 +135,24 @@ def cNFW(m,z=0,virial=False,method='d15', wdm=False,mWDM=5.,massdef=None):
         cosmology.setCurrent(cosmoWMAP5)
         c = colossus_cNFW(m/h0, massdef, z, model='diemer19')
 
+    elif method=='enhanced':
+
+        assert (kcut==5 or kcut==8 or kcut==14 or kcut==23 or kcut==39 or kcut==50), 'kcut must be 5, 8, 14, 23, 39, or 50 for enhanced small-scale power spectrum model'
+        assert (ncut==1.4 or ncut==2.0 or ncut==2.9 or ncut==4.2 or ncut==5.0), 'ncut must be 1.4, 2.0, 2.9, 4.2, or 5.0 for enhanced small-scale power spectrum model'
+    
+        k_string = '50' if kcut==50 else str(round(float(kcut),1))
+        fn = DIR+'assets/mf/mf_enhanced/concentrations/cut_'+k_string+'_index_'+str(round(ncut,1))+'.dat'
+        m200c, c200c = loadtxt(fn,unpack=True)
+
+        if hasattr(m,'__iter__'):
+            assert min(m) >= m200c[0], 'given mass '+str(min(m))+' falls below range where data for enhanced power spectrum concentrations exist, '+str(m200c[0])+' msun'
+            assert max(m) <= m200c[-1], 'given mass '+str(max(m))+' falls above range where data for enhanced power spectrum concentrations exist, '+str(m200c[-1])+' msun'
+        else:
+            assert m >= m200c[0], 'given mass '+str(m)+' falls below range where data for enhanced power spectrum concentrations exist, '+str(m200c[0])+' msun'
+            assert m <= m200c[-1], 'given mass '+str(m)+' falls above range where data for enhanced power spectrum concentrations exist, '+str(m200c[-1])+' msun'
+
+        return interp(m, m200c,c200c)
+        
     else:
         print('did not recognize given mass-concentration relation',relation,'!  Aborting...')
         exit()
@@ -268,8 +286,9 @@ mstarM21 = interp1d(log(10**log10mhM21),log(10**log10msM21),kind='linear',fill_v
 
 # CDM mass function
 def mf_cdm(m,mhost=1e12):
-    if CDM_MF == 'd17':
-        return 1.88e-3 * m**-1.87 * mhost  # m in MSUN, from Dooley+ 2017a (infall mass)
+    if CDM_MF == 'd17':  # m in MSUN, Dooley+ 2017a
+        #return 1.88e-3 * m**-1.87 * mhost  # peak virial mass
+        return 8.54e-4 * m**-1.84 * mhost
     elif CDM_MF == 'gk14':
         #mf_cdm = lambda m: 1.11 * (m/)**-1.87 * MHOST  # m in MSUN, from GK's ELVIS paper
         print('no support for GK14 ELVIS subhalo MF!  Aborting...')
@@ -279,6 +298,7 @@ def mf_cdm(m,mhost=1e12):
         exit()
 
 
+        
 # WDM mass function definitions
 MU        = 1.12   # exponent in transfer function in Schneider+ 2012
 if WDM_MF == 'schneider':
@@ -301,3 +321,23 @@ def mass_hm(mWDM,cNFW_method='d15'):
     lambda_hm = 2*pi* alpha_hm * (2**(MU/5.) - 1)**(-1./2/MU)
     return  4*pi/3 * rho_bar0 * (lambda_hm/2)**3
 
+
+
+# enhanced power spectrum (w/Ivan+Annika)
+def mf_enhanced(m,mhost=1e12,kcut=50,ncut=5.0):
+
+    assert (mhost==1e12 or mhost==5e11 or mhost==2e12), 'mhost must be 5e11, 1e12, or 2e12 MSUN for enhanced small-scale power spectrum mass function'
+    assert (kcut==5 or kcut==8 or kcut==14 or kcut==23 or kcut==39 or kcut==50), 'kcut must be 5, 8, 14, 23, 39, or 50 for enhanced small-scale power spectrum mass function'
+    assert (ncut==1.4 or ncut==2.0 or ncut==2.9 or ncut==4.2 or ncut==5.0), 'ncut must be 1.4, 2.0, 2.9, 4.2, or 5.0 for enhanced small-scale power spectrum mass function'
+    
+    k_string = '50' if kcut==50 else str(round(float(kcut),1))
+    fn = DIR+'assets/mf/mf_enhanced/shmf/subhalo_cut_'+k_string+'_index_'+str(round(ncut,1))+'.dat'
+    q, dNdm, stat_uncert = loadtxt(fn,unpack=True)
+    msub = q*mhost
+
+    if hasattr(m,'__iter__'):
+        assert min(m) >= msub[0], 'given mass '+str(min(m))+' falls below range where data for enhanced power spectrum mass function exists, '+str(msub[0])+' msun'
+    else:
+        assert m >= msub[0], 'given mass '+str(m)+' falls below range where data for enhanced power spectrum mass function exists, '+str(msub[0])+' msun'
+    
+    return interp(m, msub,dNdm, right=0)
