@@ -9,6 +9,8 @@ import os
 hostname = os.uname()[1]
 if hostname == 'CLWS00081':
     DIR = '/home/stacykim/research/pyutils/'
+elif 'astro' in hostname or 'cluster' in hostname:
+    DIR = '/user/HS103/sk0048/research/pyutils/'
 else:
     DIR = '/Users/hgzxbprn/Documents/research/pyutils/'
 
