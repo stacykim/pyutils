@@ -64,7 +64,7 @@ def menc(renc,m200,profile,mleft=1,mleft100=None,zin=0.,smhm='m13',mstar=None,re
             mleft100 = array([ root(f,x0=xx0,args=(mm200,rr200,cc200)).x[0] for rr200,mm200,cc200,xx0 in zip(r200,m200,c200,x0) ])
             mleft100[mleft100 > 0.9] = 1.
         else:
-            mleft100 = root(f,x0=mleft,args=(m200,r200)).x[0]
+            mleft100 = root(f,x0=mleft,args=(m200,r200,c200)).x[0]
             if mleft100 > 0.9: mleft100 = 1.
 
     onesub = not hasattr(mleft100,'__iter__')
@@ -279,7 +279,7 @@ def Reff(m200,profile,cK=5.,mleft=1,zin=0.,sigmaSI=None,mcore_thres=None,reff='r
 
     # for stripped halo, calculate change in reff via Penarrubia+ 2008 methods
     # (which only applies to ABG profiles --> base profiles for non-ABGs)
-    base_profile = 'nfw' if (profile=='coreNFW' or profile=='sidm') else profile
+    base_profile = 'nfw' if (profile=='coreNFW' or profile=='sidm' or profile=='SIDM') else profile
     Rcore  = Re0/Reff_in_Rcore(cK)  # 2D core radius, in kpc
     mcore0 = menc(Rcore,m200,base_profile,mleft=1    ,zin=zin,Re0=Re0,sigmaSI=sigmaSI,mcore_thres=mcore_thres,cNFW_method=cNFW_method,c200=c200,wdm=wdm,mWDM=mWDM)  # 3D integral in mass, in MSUN
     mcore  = menc(Rcore,m200,base_profile,mleft=mleft,zin=zin,Re0=Re0,sigmaSI=sigmaSI,mcore_thres=mcore_thres,cNFW_method=cNFW_method,c200=c200,wdm=wdm,mWDM=mWDM)  # 3D integral in mass, in MSUN
