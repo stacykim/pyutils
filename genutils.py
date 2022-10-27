@@ -48,10 +48,10 @@ G           = 6.67e-8         # in cgs
 # GENERAL REDSHIFT-DEPENDENT QUANTITIES
 
 def rho_bar(z,method='d15'):  # in MSUN/KPC^3
-    if   method == 'd08':      return cosmoWMAP5.rho_m(z) / (cosmoWMAP5.Hz(0)/100.)**2  # Duffy+ 2008
-    elif method == 'd14':      return cosmoP13.rho_m(z)   / (cosmoP13.Hz(0)/100.)**2   # Dutton+ 2014
-    elif method == 'd15-wmap': return cosmoWMAP5.rho_m(z) / (cosmoWMAP5.Hz(0)/100.)**2  # cosmology in Duffy+ 2008 but DJ19 c-M relation
-    elif 'd15' in method:      return cosmoP18.rho_m(z)   / (cosmoP18.Hz(0)/100.)**2   # Diemer & Joyce 2019
+    if   method == 'd08':      return cosmoWMAP5.rho_m(z) * (cosmoWMAP5.Hz(0)/100.)**2  # Duffy+ 2008
+    elif method == 'd14':      return cosmoP13.rho_m(z)   * (cosmoP13.Hz(0)/100.)**2   # Dutton+ 2014
+    elif method == 'd15-wmap': return cosmoWMAP5.rho_m(z) * (cosmoWMAP5.Hz(0)/100.)**2  # cosmology in Duffy+ 2008 but DJ19 c-M relation
+    elif 'd15' in method:      return cosmoP18.rho_m(z)   * (cosmoP18.Hz(0)/100.)**2   # Diemer & Joyce 2019
 
 def h(z,method='d15'):  # returns H(z)/100.
     if   method == 'd08':      return cosmoWMAP5.Hz(z)/100.  # Duffy+ 2008
@@ -67,10 +67,10 @@ def age(z,method='d15'):  # in Gyr
 
 def rhoc(z,method='d15'):
     #rhoc  = 3/(8*pi*G) * (7.0/PC)**2 # critical density in g/cm^3
-    if   method == 'd08':      return cosmoWMAP5.rho_c(z) / (cosmoWMAP5.Hz(0)/100)**2 * MSUN/KPC**3 # Duffy+ 2008
-    elif method == 'd14':      return cosmoP13.rho_c(z)   / (cosmoP13.Hz(0)  /100)**2 * MSUN/KPC**3 # Dutton+ 2014
-    elif method == 'd15-wmap': return cosmoWMAP5.rho_c(z) / (cosmoWMAP5.Hz(0)/100)**2 * MSUN/KPC**3 # cosmology in Duffy+ 2008 but DJ19 c-M relation
-    elif 'd15' in method:      return cosmoP18.rho_c(z)   / (cosmoP18.Hz(0)  /100)**2 * MSUN/KPC**3 # Diemer & Joyce 2019
+    if   method == 'd08':      return cosmoWMAP5.rho_c(z) * (cosmoWMAP5.Hz(0)/100)**2 * MSUN/KPC**3 # Duffy+ 2008
+    elif method == 'd14':      return cosmoP13.rho_c(z)   * (cosmoP13.Hz(0)  /100)**2 * MSUN/KPC**3 # Dutton+ 2014
+    elif method == 'd15-wmap': return cosmoWMAP5.rho_c(z) * (cosmoWMAP5.Hz(0)/100)**2 * MSUN/KPC**3 # cosmology in Duffy+ 2008 but DJ19 c-M relation
+    elif 'd15' in method:      return cosmoP18.rho_c(z)   * (cosmoP18.Hz(0)  /100)**2 * MSUN/KPC**3 # Diemer & Joyce 2019
 
 def omega_m(z,method='d15'):
     if   method == 'd08'     : return cosmoWMAP5.Om(z)
